@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">闺蜜机（演示）</string>
+    <string name="app_count">共 %1$d 个入口</string>
+    <string name="empty_apps">没有发现可启动的应用</string>
+</resources>
