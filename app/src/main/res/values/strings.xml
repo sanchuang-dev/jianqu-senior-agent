@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">闺蜜机（演示）</string>
+    <string name="app_count">共 %1$d 个入口</string>
+    <string name="empty_apps">没有发现可启动的应用</string>
+    <string name="apps_unavailable">读取失败</string>
+    <string name="apps_load_error">无法读取应用列表，请检查系统权限或重试。</string>
+</resources>
