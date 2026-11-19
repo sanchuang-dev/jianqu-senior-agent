@@ -1,16 +1,16 @@
-# 见趣·银龄私人 Agent｜仓库协作约束
+# 闺蜜机 Launcher × 小暖｜仓库协作约束
 
 继承 [三创组织 AGENTS.md](https://github.com/sanchuang-dev/.github/blob/main/AGENTS.md) 当前规则。遇到冲突以组织规定及当前任务合同为准。
 
 ## 1. 项目定位
-- 本仓库仅负责**普通 Android 设备可安装的见趣 Launcher + 设备订阅 + 老人私人 Agent 原型**，首个验证终端为闺蜜机。
+- 本仓库仅负责**普通 Android 设备可安装的闺蜜机 Launcher + 设备订阅 +「小暖」模拟原型**；「见趣」只是暂定产品名，三创是企业品牌，小暖是 Agent 名称。
 - 与 [ai-mirror](https://github.com/sanchuang-dev/ai-mirror) 的五端 Web/业务产品分工：`ai-mirror` 继续拥有五端总体产品基线；本仓库拥有该 Android 原型的具体需求、界面与实现，不另复制五端产品需求。
 - 具体需求以 [docs/product/PRD-v0.1.md](docs/product/PRD-v0.1.md) 为单一事实源；Issue 仅承担工程工作项与验收合同，不在多处维护冲突版本。
-- 当前阶段仅立项与 PRD，**未授权施工、AI 接口接线、真实支付、安装部署或发版**。
+- 当前阶段仅立项与 PRD，**未授权施工、真实 AI、支付、安装部署或发版**。V0.1 明确为一个 APK、本地 Mock、无后端与账户；不因“Agent”引入多进程、插件系统或服务编排。
 
 ## 2. 技术与设备边界
-- 设备基线 Android 11+、4GB RAM，普通第三方 APK 安装；不预设 Root、系统签名、出厂预装、Device Owner 或厂家 ROM 权限。
-- Launcher 只做品牌标识、可启动已安装应用展示/启动、设备服务入口；Agent 与业务能力与 Launcher 核心解耦。
+- 参考供应商配置为 Android 11+、4GB+64GB 起、21.5–32 英寸可旋转竖屏镜面机；**供应商建议不等于已到货实机**。普通第三方 APK 安装；不预设 Root、系统签名、预装、Device Owner 或厂家 ROM 权限。
+- Launcher 只做品牌标识、可启动已安装应用展示/启动、设备服务入口；「小暖」和订阅是同 APK 内独立逻辑模块，不拆分多个 APK 或开发复杂插件架构。
 - Android 系统应用可见性、默认桌面、开机回到首页、性能及 OEM 差异必须实机验证；不能把设计假设写成已通过的设备测试。
 - 设备订阅是**原型演示**，不构成系统级防绕过授权或真实付费机制。
 
