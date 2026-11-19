@@ -1,7 +1,7 @@
 # PRD V0.1｜闺蜜机 Launcher × 小暖（Android 模拟原型）
 
 > 日期：2026-11-19  
-> 状态：**原型需求已收敛，待 UI/实机验收；尚未启动开发**  
+> 状态：**原型开发中：JQ-002 已合入 dev；JQ-003 已获授权施工；实机未验收**
 > 产品：见趣·闺蜜机（名称暂用，非商标确认）  
 > 本文是本仓库 Android 原型的产品真相源；五端总体业务仍由 [ai-mirror 产品基线](https://github.com/sanchuang-dev/ai-mirror/blob/main/docs/product/elder-companion-v0.1.md) 负责。
 
@@ -175,14 +175,14 @@
 
 ## 9. 开发安排与依赖
 
-目前仅授权 **立项 + PRD**，不授权落地 APK、云服务或真实支付。
+当前已获 **JQ-002（Launcher 底座）与 JQ-003（本地模拟）** 的独立实施授权；不授权生产发布、云端服务或真实支付。
 
 建议后续**少量切片**实施，不把模拟玩具拆成多套微服务：
 1. 基础 APK：HOME Launcher、企业品牌、真实已安装应用目录和启动。
 2. 本地演示：设备订阅、我的闺蜜机、小暖与三种风格脚本、一个真实应用启动动作。
 3. 验收：模拟器先验证交互，拿到闺蜜机再验竖屏、旋转、厂商 ROM 和稳定性。
 
-此处仅是建议分组，不会自动新建实施 Issue，也不授权云端、支付或 AI 施工。
+实施任务已建立为 [JQ-002 #2](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/2) 与 [JQ-003 #3](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/3)；剩余设备验收归父里程碑 #1，不授权云端、支付或 AI 施工。
 
 ### 待验证（不是现在向用户追问的前置问题）
 
