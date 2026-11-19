@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.GridLayout
@@ -22,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import java.text.Collator
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * Small standalone HOME launcher. The real Android app catalog is not a mock.
@@ -86,8 +88,16 @@ class LauncherActivity : Activity() {
         }
         setContentView(root)
 
-        val brand = label("三创  /  SANCHUANG", 19f, accent, true)
-        root.addView(brand, LinearLayout.LayoutParams(-1, dp(40)))
+        val brand = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        val brandIcon = ImageView(this).apply {
+            setImageResource(R.drawable.sanchuang_logo)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = "三创企业标识"
+        }
+        brand.addView(brandIcon, LinearLayout.LayoutParams(dp(46), dp(46)))
+        val brandName = label("三创  /  SANCHUANG", 18f, ink, true)
+        brand.addView(brandName, LinearLayout.LayoutParams(-2, dp(46)).apply { leftMargin = dp(8) })
+        root.addView(brand, LinearLayout.LayoutParams(-1, dp(54)))
 
         val title = label("我的闺蜜机", 33f, ink, true)
         root.addView(title, LinearLayout.LayoutParams(-1, dp(55)))
@@ -135,18 +145,26 @@ class LauncherActivity : Activity() {
     }
 
     private fun refresh() {
-        worker.execute {
-            val entries = try {
-                apps.getActivityList(null, Process.myUserHandle())
-                    .sortedWith(compareBy(Collator.getInstance(java.util.Locale.CHINA)) { it.label.toString() })
-            } catch (_: SecurityException) {
-                emptyList()
-            } catch (_: RuntimeException) {
-                emptyList()
+        if (isDestroyed || worker.isShutdown) return
+        try {
+            worker.execute {
+                val result = runCatching {
+                    apps.getActivityList(null, Process.myUserHandle())
+                        .sortedWith(compareBy(Collator.getInstance(java.util.Locale.CHINA)) { it.label.toString() })
+                }
+                main.post {
+                    if (!isDestroyed && !isFinishing) {
+                        result.onSuccess(::renderApps).onFailure { error ->
+                            Log.e("JianquLauncher", "Cannot load system app catalog", error)
+                            catalog.removeAllViews()
+                            appCount.text = getString(R.string.apps_unavailable)
+                            catalog.addView(label(getString(R.string.apps_load_error), 17f, secondary))
+                        }
+                    }
+                }
             }
-            main.post {
-                if (!isDestroyed && !isFinishing) renderApps(entries)
-            }
+        } catch (_: RejectedExecutionException) {
+            // A queued package callback can race with Activity destruction.
         }
     }
 
