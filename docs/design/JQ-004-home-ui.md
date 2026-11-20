@@ -1,8 +1,8 @@
 # JQ-004｜Launcher HOME 主屏设计执行稿（第一轮）
 
-> 对应 Issue [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7)  
-> 产品依据：[PRD V0.2 Draft PR #6](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/6)；V0.2 未合并，01–08 仍是候选顺序  
-> 状态：**结构与实施接缝草案／未完成视觉验收；非最终高保真，也非运行实测**  
+> 对应 Issue [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7)
+> 产品依据：[PRD V0.2 Draft PR #6](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/6)；V0.2 未合并，01–08 仍是候选顺序
+> 状态：**HOME 代码已实现并通过本地 Android 构建／Lint；尚未进行模拟器及实机 UI 验收**
 > 实施基线：`dev`，仅针对 HOME 及保留全部应用能力；不触及生产、发布或真实外部服务
 
 ## 1. 核对过的当前代码事实
