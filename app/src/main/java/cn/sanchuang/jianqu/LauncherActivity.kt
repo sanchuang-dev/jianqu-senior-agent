@@ -194,7 +194,7 @@ class LauncherActivity : Activity() {
             clipToPadding = false
             isFillViewport = false
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
-            verticalScrollBarEnabled = false
+            isVerticalScrollBarEnabled = false
         }
         val body = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
