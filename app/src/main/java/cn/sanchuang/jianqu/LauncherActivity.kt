@@ -88,8 +88,6 @@ class LauncherActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = backgroundColor
-        window.navigationBarColor = backgroundColor
         apps = getSystemService(LauncherApps::class.java)
         apps.registerCallback(packageCallback, main)
         showHome()
@@ -122,8 +120,10 @@ class LauncherActivity : Activity() {
         }
     }
 
+    @Deprecated("Android back navigation callback; HOME must remain the root destination.")
     override fun onBackPressed() {
-        if (page == Page.ALL_APPS) showHome() else super.onBackPressed()
+        if (page == Page.ALL_APPS) showHome()
+        // No-op on HOME: a launcher must not finish itself on Back.
     }
 
     override fun onDestroy() {
