@@ -528,6 +528,28 @@ class LauncherActivity : Activity() {
             strokeJoin = Paint.Join.ROUND
         }
 
+        // Reuse immutable geometry: Android redraws launcher icons frequently while scrolling.
+        private val cameraPath = Path().apply {
+            moveTo(69f, 41f); lineTo(85f, 31f); lineTo(85f, 68f); lineTo(69f, 58f); close()
+        }
+        private val galleryPath = Path().apply {
+            moveTo(21f, 72f); lineTo(42f, 49f); lineTo(56f, 63f); lineTo(66f, 55f); lineTo(80f, 73f)
+        }
+        private val moviePath = Path().apply {
+            moveTo(43f, 37f); lineTo(66f, 50f); lineTo(43f, 63f); close()
+        }
+        private val bagArc = RectF(37f, 19f, 63f, 51f)
+        private val musicLeft = RectF(22f, 63f, 49f, 79f)
+        private val musicRight = RectF(53f, 54f, 79f, 71f)
+        private val heartPath = Path().apply {
+            moveTo(50f, 78f)
+            cubicTo(32f, 64f, 19f, 52f, 19f, 39f)
+            cubicTo(19f, 22f, 40f, 19f, 50f, 35f)
+            cubicTo(62f, 19f, 81f, 24f, 81f, 39f)
+            cubicTo(81f, 53f, 68f, 65f, 50f, 78f)
+            close()
+        }
+
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
             val scale = min(width, height) / 100f
@@ -537,33 +559,28 @@ class LauncherActivity : Activity() {
             when (kind) {
                 0 -> {
                     canvas.drawRoundRect(16f, 30f, 63f, 70f, 7f, 7f, pen)
-                    val p = Path().apply {
-                        moveTo(69f, 41f); lineTo(85f, 31f); lineTo(85f, 68f); lineTo(69f, 58f); close()
-                    }
-                    canvas.drawPath(p, pen)
+                    canvas.drawPath(cameraPath, pen)
                 }
                 1 -> {
                     canvas.drawRoundRect(16f, 20f, 84f, 80f, 7f, 7f, pen)
                     canvas.drawCircle(63f, 37f, 7f, pen)
-                    val p = Path().apply { moveTo(21f, 72f); lineTo(42f, 49f); lineTo(56f, 63f); lineTo(66f, 55f); lineTo(80f, 73f) }
-                    canvas.drawPath(p, pen)
+                    canvas.drawPath(galleryPath, pen)
                 }
                 2 -> {
                     canvas.drawRoundRect(15f, 23f, 85f, 77f, 7f, 7f, pen)
-                    val p = Path().apply { moveTo(43f, 37f); lineTo(66f, 50f); lineTo(43f, 63f); close() }
-                    canvas.drawPath(p, pen)
+                    canvas.drawPath(moviePath, pen)
                 }
                 3 -> {
                     canvas.drawRoundRect(25f, 36f, 75f, 81f, 5f, 5f, pen)
-                    canvas.drawArc(RectF(37f, 19f, 63f, 51f), 180f, 180f, false, pen)
+                    canvas.drawArc(bagArc, 180f, 180f, false, pen)
                 }
                 4 -> {
                     canvas.drawLine(47f, 28f, 47f, 70f, pen)
                     canvas.drawLine(47f, 28f, 77f, 20f, pen)
                     canvas.drawLine(77f, 20f, 77f, 59f, pen)
                     pen.style = Paint.Style.FILL
-                    canvas.drawOval(RectF(22f, 63f, 49f, 79f), pen)
-                    canvas.drawOval(RectF(53f, 54f, 79f, 71f), pen)
+                    canvas.drawOval(musicLeft, pen)
+                    canvas.drawOval(musicRight, pen)
                     pen.style = Paint.Style.STROKE
                 }
                 5 -> {
@@ -579,15 +596,7 @@ class LauncherActivity : Activity() {
                     canvas.drawLine(29f, 72f, 64f, 72f, pen)
                 }
                 7 -> {
-                    val p = Path().apply {
-                        moveTo(50f, 78f)
-                        cubicTo(32f, 64f, 19f, 52f, 19f, 39f)
-                        cubicTo(19f, 22f, 40f, 19f, 50f, 35f)
-                        cubicTo(62f, 19f, 81f, 24f, 81f, 39f)
-                        cubicTo(81f, 53f, 68f, 65f, 50f, 78f)
-                        close()
-                    }
-                    canvas.drawPath(p, pen)
+                    canvas.drawPath(heartPath, pen)
                 }
                 8 -> {
                     canvas.drawCircle(50f, 50f, 16f, pen)
