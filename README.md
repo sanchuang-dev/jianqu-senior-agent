@@ -1,8 +1,8 @@
-# 闺蜜机 Launcher × 小暖｜Android 模拟原型
+# 闺蜜机 Launcher × 小暖｜Android 原型
 
 > 三创科技（SANCHUANG） ·「见趣」为暂定产品名 ·「小暖」为已确认的 AI 伙伴名
 >
-> **当前代码分支：JQ-002 的 Launcher 最小底座**。设备订阅与小暖模拟在 [JQ-003](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/3) 实施；不是完整产品。
+> **当前 dev 代码基线：JQ-002 Launcher 最小底座**。设备订阅与小暖本地 Mock 在 [JQ-003 Draft PR](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/5)，未合入 dev，真实闺蜜机尚未验收。**第二期 V0.2 目前仅是产品/界面讨论稿，不代表第二期功能已实现。**
 
 ## 项目范围
 
@@ -26,7 +26,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 文档
 
-- [唯一产品 PRD](docs/product/PRD-v0.1.md)
+- [第一期 PRD V0.1 — 已有工程实施基线](docs/product/PRD-v0.1.md)
+- [第二期 PRD V0.2 — 新版桌面与功能原型讨论稿](docs/product/PRD-v0.2.md)
 - [仓库约束](AGENTS.md)
 - [阶段里程碑](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)
 - [JQ-002 Launcher 底座](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/2)
@@ -34,5 +35,5 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 验收边界
 
-- **已验证**（当前 JQ-002 本地工作）：Gradle `assembleDebug` 可在授权 Mac 上完成，结果见对应 PR 的证据。
+- **已验证**：JQ-002 构建证据见其对应 PR；JQ-003 的 Debug APK 也曾完成构建与 GitHub Actions 检查，证据见 Draft PR。构建不等于真机功能验收。
 - **尚未验证**：真实设备将本应用设为默认 HOME、App 启动行为、屏幕旋转、换机适配；不能用构建成功代替这些行为测试。
