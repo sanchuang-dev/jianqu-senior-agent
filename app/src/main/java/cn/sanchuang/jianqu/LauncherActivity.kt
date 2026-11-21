@@ -456,7 +456,7 @@ class LauncherActivity : Activity() {
             LinearLayout.LayoutParams(-1, dp(38)))
         val city = WeatherCity.current(this)
         addSettingsItem(content, "天气城市",
-            if (city.isEmpty()) "尚未选择城市 · 天气数据未接入" else "$city · 天气数据未接入") {
+            if (city.isEmpty()) "尚未选择城市 · 不读取设备定位" else "$city · 点击更换") {
             showCityDialog()
         }
         addSettingsItem(content, "Wi-Fi 与网络", "打开 Android 的网络设置") {
