@@ -201,19 +201,6 @@ class LauncherActivity : Activity() {
         }
         setContentView(root)
 
-        val brand = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
-        }
-        brand.addView(ImageView(this).apply {
-            setImageResource(R.drawable.sanchuang_logo)
-            contentDescription = "三创企业标志"
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }, LinearLayout.LayoutParams(dp(34), dp(34)))
-        brand.addView(text("三创  ·  SANCHUANG", 15f, ink, true),
-            LinearLayout.LayoutParams(-2, dp(36)).apply { leftMargin = dp(9) })
-        root.addView(brand, LinearLayout.LayoutParams(-1, dp(42)))
-
         val scroll = ScrollView(this).apply {
             clipToPadding = false
             isFillViewport = false
