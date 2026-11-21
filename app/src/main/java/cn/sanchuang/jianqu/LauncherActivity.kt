@@ -275,16 +275,25 @@ class LauncherActivity : Activity() {
             background = touch(Color.rgb(244, 239, 229), 16)
             isClickable = true
             isFocusable = true
-            contentDescription = "当地天气，查看未来七天预报，目前未接入天气服务"
+            contentDescription = "天气，查看真实的七日预报"
             setOnClickListener {
                 returningFromWeather = true
                 startActivity(Intent(this@LauncherActivity, WeatherActivity::class.java))
             }
         }
         val chosenCity = WeatherCity.current(this)
-        val weatherHeading = if (chosenCity.isEmpty()) "☁  当地天气" else "☁  $chosenCity · 天气"
+        val weatherPlace = WeatherCity.place(this)
+        val weatherHeading = if (weatherPlace == null) "☁  当地天气" else "☁  ${weatherPlace.name} · 天气"
         weather.addView(text(weatherHeading, 16f, ink, true))
-        weather.addView(text("七日预报 · 待接入  ›", 12f, muted),
+        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
+        val weatherSummary = when {
+            weatherPlace == null -> "选择城市 · 七日预报  ›"
+            !WeatherData.consented(this) -> "免费天气 · 点此启用  ›"
+            cachedWeather == null -> "联网查询七日天气  ›"
+            cachedWeather.stale -> "${cachedWeather.nearTemperature}° · 缓存过期  ›"
+            else -> "${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
+        }
+        weather.addView(text(weatherSummary, 12f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         line.addView(weather, LinearLayout.LayoutParams(
             dp(if (landscape) 245 else 180), dp(if (landscape) 72 else 88)
