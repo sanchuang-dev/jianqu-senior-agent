@@ -372,11 +372,7 @@ class LauncherActivity : Activity() {
             isFocusable = true
             contentDescription = "SOS 紧急求助，当前为未接入真实求救功能的原型"
             setOnClickListener {
-                AlertDialog.Builder(this@LauncherActivity)
-                    .setTitle("紧急求助尚未启用")
-                    .setMessage("当前是功能原型，无法发送求助、通知护理站或拨打急救电话。遇到紧急情况，请立即联系现场人员或使用可靠的电话求助。")
-                    .setPositiveButton("我知道了", null)
-                    .show()
+                startActivity(Intent(this@LauncherActivity, SosActivity::class.java))
             }
         }
         val icon = text("SOS", 17f, LauncherUiTokens.danger, true)
