@@ -286,20 +286,8 @@ class LauncherActivity : Activity() {
 
         val infoWidth = if (landscape) 360 else 262
         row.addView(environment, LinearLayout.LayoutParams(dp(infoWidth), -2))
-        // Keep the approved portrait on the right only in landscape; it is an
-        // illustration, not a button, and never covers the time or weather.
-        if (landscape) {
-            val artRail = FrameLayout(this)
-            val portrait = ImageView(this).apply {
-                setImageResource(R.drawable.xiaonuan_home)
-                scaleType = ImageView.ScaleType.FIT_END
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-            artRail.addView(portrait, FrameLayout.LayoutParams(
-                dp(250), -1, Gravity.END or Gravity.BOTTOM
-            ).apply { rightMargin = dp(25) })
-            row.addView(artRail, LinearLayout.LayoutParams(0, dp(134), 1f))
-        }
+        // Intentional blank area; no placeholder drawing or fake artwork.
+        row.addView(View(this), LinearLayout.LayoutParams(0, dp(116), 1f))
         body.addView(row)
     }
 
