@@ -50,7 +50,7 @@ import java.util.concurrent.RejectedExecutionException
 class LauncherActivity : Activity() {
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
-    private enum class QuickActionDestination { PLACEHOLDER, SERVICES, SETTINGS, ALL_APPS }
+    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, SERVICES, SETTINGS, ALL_APPS }
 
     private data class QuickAction(
         val title: String,
@@ -79,7 +79,7 @@ class LauncherActivity : Activity() {
     private var returningFromWeather = false
 
     private val quickActions = listOf(
-        QuickAction("家人通话", R.drawable.ic_home_video_camera, Color.rgb(226, 242, 237), QuickActionDestination.PLACEHOLDER),
+        QuickAction("家人通话", R.drawable.ic_home_video_camera, Color.rgb(226, 242, 237), QuickActionDestination.FAMILY_CALL),
         QuickAction("家庭相册", R.drawable.ic_home_images, Color.rgb(251, 237, 217), QuickActionDestination.PLACEHOLDER),
         QuickAction("影视节目", R.drawable.ic_home_film_strip, Color.rgb(225, 236, 248), QuickActionDestination.PLACEHOLDER),
         QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, Color.rgb(250, 226, 219), QuickActionDestination.PLACEHOLDER),
@@ -398,6 +398,7 @@ class LauncherActivity : Activity() {
     private fun openQuickAction(destination: QuickActionDestination, name: String) {
         when (destination) {
             QuickActionDestination.ALL_APPS -> showAllApps()
+            QuickActionDestination.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
             QuickActionDestination.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
             QuickActionDestination.SETTINGS -> showSettings()
             QuickActionDestination.PLACEHOLDER -> unavailable(
