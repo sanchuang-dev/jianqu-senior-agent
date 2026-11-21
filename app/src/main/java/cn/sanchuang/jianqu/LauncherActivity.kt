@@ -50,7 +50,7 @@ import java.util.concurrent.RejectedExecutionException
 class LauncherActivity : Activity() {
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
-    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
+    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, STOREFRONT, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
 
     private data class QuickAction(
         val title: String,
@@ -82,7 +82,7 @@ class LauncherActivity : Activity() {
         QuickAction("家人通话", R.drawable.ic_home_video_camera, LauncherUiTokens.familyCallIcon, QuickActionDestination.FAMILY_CALL),
         QuickAction("家庭相册", R.drawable.ic_home_images, LauncherUiTokens.albumIcon, QuickActionDestination.CONTENT_ALBUM),
         QuickAction("影视节目", R.drawable.ic_home_film_strip, LauncherUiTokens.videoIcon, QuickActionDestination.CONTENT_VIDEO),
-        QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, Color.rgb(250, 226, 219), QuickActionDestination.PLACEHOLDER),
+        QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, LauncherUiTokens.storeIcon, QuickActionDestination.STOREFRONT),
         QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, LauncherUiTokens.musicIcon, QuickActionDestination.CONTENT_MUSIC),
         QuickAction("健康讲座", R.drawable.ic_home_stethoscope, LauncherUiTokens.healthIcon, QuickActionDestination.CONTENT_HEALTH),
         QuickAction("建政栏目", R.drawable.ic_home_newspaper, LauncherUiTokens.newsIcon, QuickActionDestination.CONTENT_NEWS),
@@ -391,6 +391,7 @@ class LauncherActivity : Activity() {
         when (destination) {
             QuickActionDestination.ALL_APPS -> showAllApps()
             QuickActionDestination.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
+            QuickActionDestination.STOREFRONT -> startActivity(Intent(this, StorefrontActivity::class.java))
             QuickActionDestination.CONTENT_ALBUM -> openContent(ContentGalleryActivity.ALBUM)
             QuickActionDestination.CONTENT_VIDEO -> openContent(ContentGalleryActivity.VIDEO)
             QuickActionDestination.CONTENT_MUSIC -> openContent(ContentGalleryActivity.MUSIC)
