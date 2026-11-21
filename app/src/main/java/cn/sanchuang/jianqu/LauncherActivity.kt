@@ -3,17 +3,12 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
@@ -45,7 +40,6 @@ import java.text.Collator
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
-import kotlin.math.min
 
 /**
  * Android HOME is a stable place to return to, not the device's entire application catalog.
@@ -56,13 +50,20 @@ import kotlin.math.min
 class LauncherActivity : Activity() {
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
-    private data class QuickAction(val title: String, val icon: Int, val color: Int)
+    private enum class QuickActionDestination { PLACEHOLDER, SERVICES, SETTINGS, ALL_APPS }
 
-    private val backgroundColor = Color.rgb(250, 248, 244)
-    private val ink = Color.rgb(48, 53, 53)
-    private val muted = Color.rgb(112, 119, 117)
-    private val terracotta = Color.rgb(159, 88, 69)
-    private val divider = Color.rgb(235, 231, 225)
+    private data class QuickAction(
+        val title: String,
+        val iconRes: Int,
+        val color: Int,
+        val destination: QuickActionDestination
+    )
+
+    private val backgroundColor = LauncherUiTokens.background
+    private val ink = LauncherUiTokens.ink
+    private val muted = LauncherUiTokens.muted
+    private val terracotta = LauncherUiTokens.terracotta
+    private val divider = LauncherUiTokens.divider
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var apps: LauncherApps
@@ -78,16 +79,16 @@ class LauncherActivity : Activity() {
     private var returningFromWeather = false
 
     private val quickActions = listOf(
-        QuickAction("家人通话", 0, Color.rgb(226, 242, 237)),
-        QuickAction("家庭相册", 1, Color.rgb(251, 237, 217)),
-        QuickAction("影视节目", 2, Color.rgb(225, 236, 248)),
-        QuickAction("精选商城", 3, Color.rgb(250, 226, 219)),
-        QuickAction("音乐戏曲", 4, Color.rgb(246, 232, 243)),
-        QuickAction("健康讲座", 5, Color.rgb(229, 242, 226)),
-        QuickAction("建政栏目", 6, Color.rgb(232, 236, 246)),
-        QuickAction("我的服务", 7, Color.rgb(248, 231, 227)),
-        QuickAction("设置", 8, Color.rgb(235, 235, 235)),
-        QuickAction("全部应用", 9, Color.rgb(230, 227, 245))
+        QuickAction("家人通话", R.drawable.ic_home_video_camera, Color.rgb(226, 242, 237), QuickActionDestination.PLACEHOLDER),
+        QuickAction("家庭相册", R.drawable.ic_home_images, Color.rgb(251, 237, 217), QuickActionDestination.PLACEHOLDER),
+        QuickAction("影视节目", R.drawable.ic_home_film_strip, Color.rgb(225, 236, 248), QuickActionDestination.PLACEHOLDER),
+        QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, Color.rgb(250, 226, 219), QuickActionDestination.PLACEHOLDER),
+        QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, Color.rgb(246, 232, 243), QuickActionDestination.PLACEHOLDER),
+        QuickAction("健康讲座", R.drawable.ic_home_stethoscope, Color.rgb(229, 242, 226), QuickActionDestination.PLACEHOLDER),
+        QuickAction("建政栏目", R.drawable.ic_home_newspaper, Color.rgb(232, 236, 246), QuickActionDestination.PLACEHOLDER),
+        QuickAction("我的服务", R.drawable.ic_home_hand_heart, Color.rgb(248, 231, 227), QuickActionDestination.SERVICES),
+        QuickAction("设置", R.drawable.ic_home_gear, Color.rgb(235, 235, 235), QuickActionDestination.SETTINGS),
+        QuickAction("全部应用", R.drawable.ic_home_squares_four, Color.rgb(230, 227, 245), QuickActionDestination.ALL_APPS)
     )
 
     private val packageCallback = object : LauncherApps.Callback() {
@@ -201,19 +202,6 @@ class LauncherActivity : Activity() {
         }
         setContentView(root)
 
-        val brand = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
-        }
-        brand.addView(ImageView(this).apply {
-            setImageResource(R.drawable.sanchuang_logo)
-            contentDescription = "三创企业标志"
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }, LinearLayout.LayoutParams(dp(34), dp(34)))
-        brand.addView(text("三创  ·  SANCHUANG", 15f, ink, true),
-            LinearLayout.LayoutParams(-2, dp(36)).apply { leftMargin = dp(9) })
-        root.addView(brand, LinearLayout.LayoutParams(-1, dp(42)))
-
         val scroll = ScrollView(this).apply {
             clipToPadding = false
             isFillViewport = false
@@ -247,12 +235,16 @@ class LauncherActivity : Activity() {
     }
 
     private fun buildEnvironment(body: LinearLayout) {
-        val line = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
+        val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
         }
-        val clocks = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        clocks.addView(TextClock(this).apply {
+        // Date and weather form one left-aligned environment group.
+        // The right-hand area stays visually empty until artwork is supplied.
+        val environment = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        environment.addView(TextClock(this).apply {
             format12Hour = "hh:mm"
             format24Hour = "HH:mm"
             textSize = if (landscape) 34f else 42f
@@ -260,45 +252,44 @@ class LauncherActivity : Activity() {
             setTypeface(null, Typeface.BOLD)
             includeFontPadding = false
         })
-        clocks.addView(TextClock(this).apply {
+        environment.addView(TextClock(this).apply {
             format12Hour = "M月d日 EEEE"
             format24Hour = "M月d日 EEEE"
             textSize = 14f
             setTextColor(muted)
         })
-        line.addView(clocks, LinearLayout.LayoutParams(0, dp(if (landscape) 80 else 100), 1f))
 
-        val weather = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        val weatherPlace = WeatherCity.place(this)
+        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
+        val weatherLabel = when {
+            weatherPlace == null -> "☁  选择城市  ›"
+            !WeatherData.consented(this) -> "☁  ${weatherPlace.name} · 启用天气  ›"
+            cachedWeather == null -> "☁  ${weatherPlace.name} · 查询天气  ›"
+            cachedWeather.stale ->
+                "☁  ${weatherPlace.name} · ${cachedWeather.nearTemperature}° · 缓存过期  ›"
+            else ->
+                "☁  ${weatherPlace.name} · ${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
+        }
+        environment.addView(text(weatherLabel, if (landscape) 15f else 13f, terracotta).apply {
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(15), 0, dp(10), 0)
-            background = touch(Color.rgb(244, 239, 229), 16)
+            background = touch(backgroundColor, 12)
+            setPadding(dp(3), 0, dp(3), 0)
             isClickable = true
             isFocusable = true
-            contentDescription = "天气，查看真实的七日预报"
+            contentDescription = "天气，查看七日预报"
             setOnClickListener {
                 returningFromWeather = true
                 startActivity(Intent(this@LauncherActivity, WeatherActivity::class.java))
             }
-        }
-        val chosenCity = WeatherCity.current(this)
-        val weatherPlace = WeatherCity.place(this)
-        val weatherHeading = if (weatherPlace == null) "☁  当地天气" else "☁  ${weatherPlace.name} · 天气"
-        weather.addView(text(weatherHeading, 16f, ink, true))
-        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
-        val weatherSummary = when {
-            weatherPlace == null -> "选择城市 · 七日预报  ›"
-            !WeatherData.consented(this) -> "免费天气 · 点此启用  ›"
-            cachedWeather == null -> "联网查询七日天气  ›"
-            cachedWeather.stale -> "${cachedWeather.nearTemperature}° · 缓存过期  ›"
-            else -> "${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
-        }
-        weather.addView(text(weatherSummary, 12f, muted),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        line.addView(weather, LinearLayout.LayoutParams(
-            dp(if (landscape) 245 else 180), dp(if (landscape) 72 else 88)
-        ))
-        body.addView(line)
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
+
+        val infoWidth = if (landscape) 360 else 262
+        row.addView(environment, LinearLayout.LayoutParams(dp(infoWidth), -2))
+        // Intentional blank area; no placeholder drawing or fake artwork.
+        row.addView(View(this), LinearLayout.LayoutParams(0, dp(116), 1f))
+        body.addView(row)
     }
 
     private fun buildCompanion(body: LinearLayout) {
@@ -309,8 +300,8 @@ class LauncherActivity : Activity() {
             background = RippleDrawable(
                 ColorStateList.valueOf(Color.argb(35, 120, 70, 55)),
                 GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(Color.rgb(250, 231, 218), Color.rgb(252, 242, 227))).apply {
-                    cornerRadius = dp(20).toFloat()
+                    intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)).apply {
+                    cornerRadius = dp(LauncherUiTokens.companionRadiusDp).toFloat()
                 }, null
             )
             contentDescription = "小暖，进入本地模拟陪伴交互"
@@ -323,18 +314,7 @@ class LauncherActivity : Activity() {
                 )
             }
         }
-        val orb = FrameLayout(this).apply {
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(255, 249, 232), Color.rgb(241, 152, 125), Color.rgb(214, 119, 127))).apply {
-                shape = GradientDrawable.OVAL
-            }
-        }
-        orb.addView(View(this).apply {
-            background = GradientDrawable().apply {
-                setColor(Color.argb(130, 255, 255, 255))
-                shape = GradientDrawable.OVAL
-            }
-        }, FrameLayout.LayoutParams(dp(23), dp(23), Gravity.CENTER))
+        val orb = LauncherUiTokens.companionOrb(this)
         tile.addView(orb, LinearLayout.LayoutParams(dp(if (landscape) 58 else 70), dp(if (landscape) 58 else 70)))
         val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         copy.addView(text("小暖", if (landscape) 21f else 25f, ink, true))
@@ -368,19 +348,25 @@ class LauncherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(if (landscape) 7 else 11), dp(6), dp(4), dp(6))
-            background = touch(Color.rgb(255, 254, 252), 16, divider)
+            background = touch(LauncherUiTokens.surface, LauncherUiTokens.cardRadiusDp, divider)
             isClickable = true
             isFocusable = true
             contentDescription = action.title
             val iconBox = FrameLayout(this@LauncherActivity).apply {
                 background = shape(action.color, 13)
             }
-            iconBox.addView(HomeSymbol(this@LauncherActivity, action.icon, ink),
-                FrameLayout.LayoutParams(dp(40), dp(40), Gravity.CENTER))
+            iconBox.addView(ImageView(this@LauncherActivity).apply {
+                setImageResource(action.iconRes)
+                imageTintList = ColorStateList.valueOf(ink)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(
+                dp(if (landscape) 32 else 36), dp(if (landscape) 32 else 36), Gravity.CENTER
+            ))
             addView(iconBox, LinearLayout.LayoutParams(dp(if (landscape) 44 else 54), dp(if (landscape) 44 else 54)))
             addView(text(action.title, if (landscape) 14f else 16f, ink, true),
                 LinearLayout.LayoutParams(-1, -2).apply { leftMargin = dp(if (landscape) 7 else 10) })
-            setOnClickListener { openQuickAction(action.icon, action.title) }
+            setOnClickListener { openQuickAction(action.destination, action.title) }
         }
     }
 
@@ -409,12 +395,15 @@ class LauncherActivity : Activity() {
         root.addView(row, LinearLayout.LayoutParams(-1, dp(65)).apply { topMargin = dp(6) })
     }
 
-    private fun openQuickAction(kind: Int, name: String) {
-        when (kind) {
-            9 -> showAllApps()
-            7 -> startActivity(Intent(this, DemoActivity::class.java))
-            8 -> showSettings()
-            else -> unavailable(name, "“" + name + "”是第二期固定入口，目前尚未接入实际服务。没有发起通话、消费或其他外部操作。")
+    private fun openQuickAction(destination: QuickActionDestination, name: String) {
+        when (destination) {
+            QuickActionDestination.ALL_APPS -> showAllApps()
+            QuickActionDestination.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
+            QuickActionDestination.SETTINGS -> showSettings()
+            QuickActionDestination.PLACEHOLDER -> unavailable(
+                name,
+                "“" + name + "”是第二期固定入口，目前尚未接入实际服务。没有发起通话、消费或其他外部操作。"
+            )
         }
     }
 
@@ -752,102 +741,5 @@ class LauncherActivity : Activity() {
         }
     }
 
-    /** Compact, dependency-free line symbols. These identify prototype services, not installed apps. */
-    private class HomeSymbol(context: Context, private val kind: Int, color: Int) : View(context) {
-        private val pen = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color
-            style = Paint.Style.STROKE
-            strokeWidth = 5f
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-        }
 
-        // Reuse immutable geometry: Android redraws launcher icons frequently while scrolling.
-        private val cameraPath = Path().apply {
-            moveTo(69f, 41f); lineTo(85f, 31f); lineTo(85f, 68f); lineTo(69f, 58f); close()
-        }
-        private val galleryPath = Path().apply {
-            moveTo(21f, 72f); lineTo(42f, 49f); lineTo(56f, 63f); lineTo(66f, 55f); lineTo(80f, 73f)
-        }
-        private val moviePath = Path().apply {
-            moveTo(43f, 37f); lineTo(66f, 50f); lineTo(43f, 63f); close()
-        }
-        private val bagArc = RectF(37f, 19f, 63f, 51f)
-        private val musicLeft = RectF(22f, 63f, 49f, 79f)
-        private val musicRight = RectF(53f, 54f, 79f, 71f)
-        private val heartPath = Path().apply {
-            moveTo(50f, 78f)
-            cubicTo(32f, 64f, 19f, 52f, 19f, 39f)
-            cubicTo(19f, 22f, 40f, 19f, 50f, 35f)
-            cubicTo(62f, 19f, 81f, 24f, 81f, 39f)
-            cubicTo(81f, 53f, 68f, 65f, 50f, 78f)
-            close()
-        }
-
-        override fun onDraw(canvas: Canvas) {
-            super.onDraw(canvas)
-            val scale = min(width, height) / 100f
-            canvas.save()
-            canvas.translate((width - scale * 100f) / 2f, (height - scale * 100f) / 2f)
-            canvas.scale(scale, scale)
-            when (kind) {
-                0 -> {
-                    canvas.drawRoundRect(16f, 30f, 63f, 70f, 7f, 7f, pen)
-                    canvas.drawPath(cameraPath, pen)
-                }
-                1 -> {
-                    canvas.drawRoundRect(16f, 20f, 84f, 80f, 7f, 7f, pen)
-                    canvas.drawCircle(63f, 37f, 7f, pen)
-                    canvas.drawPath(galleryPath, pen)
-                }
-                2 -> {
-                    canvas.drawRoundRect(15f, 23f, 85f, 77f, 7f, 7f, pen)
-                    canvas.drawPath(moviePath, pen)
-                }
-                3 -> {
-                    canvas.drawRoundRect(25f, 36f, 75f, 81f, 5f, 5f, pen)
-                    canvas.drawArc(bagArc, 180f, 180f, false, pen)
-                }
-                4 -> {
-                    canvas.drawLine(47f, 28f, 47f, 70f, pen)
-                    canvas.drawLine(47f, 28f, 77f, 20f, pen)
-                    canvas.drawLine(77f, 20f, 77f, 59f, pen)
-                    pen.style = Paint.Style.FILL
-                    canvas.drawOval(musicLeft, pen)
-                    canvas.drawOval(musicRight, pen)
-                    pen.style = Paint.Style.STROKE
-                }
-                5 -> {
-                    canvas.drawCircle(50f, 50f, 30f, pen)
-                    canvas.drawLine(50f, 33f, 50f, 67f, pen)
-                    canvas.drawLine(33f, 50f, 67f, 50f, pen)
-                }
-                6 -> {
-                    canvas.drawRoundRect(19f, 19f, 81f, 81f, 5f, 5f, pen)
-                    canvas.drawLine(29f, 36f, 71f, 36f, pen)
-                    canvas.drawLine(29f, 48f, 71f, 48f, pen)
-                    canvas.drawLine(29f, 60f, 57f, 60f, pen)
-                    canvas.drawLine(29f, 72f, 64f, 72f, pen)
-                }
-                7 -> {
-                    canvas.drawPath(heartPath, pen)
-                }
-                8 -> {
-                    canvas.drawCircle(50f, 50f, 16f, pen)
-                    for (i in 0..7) {
-                        val a = i * Math.PI / 4
-                        val dx = kotlin.math.cos(a).toFloat()
-                        val dy = kotlin.math.sin(a).toFloat()
-                        canvas.drawLine(50f + dx * 29, 50f + dy * 29, 50f + dx * 39, 50f + dy * 39, pen)
-                    }
-                }
-                9 -> {
-                    for (x in listOf(22f, 55f)) for (y in listOf(22f, 55f)) {
-                        canvas.drawRoundRect(x, y, x + 23f, y + 23f, 4f, 4f, pen)
-                    }
-                }
-            }
-            canvas.restore()
-        }
-    }
 }
