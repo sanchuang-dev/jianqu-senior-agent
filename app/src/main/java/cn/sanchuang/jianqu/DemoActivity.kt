@@ -2,13 +2,18 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.res.ColorStateList
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.drawable.RippleDrawable
+import android.widget.FrameLayout
+import android.view.View
 import android.content.pm.LauncherApps
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.content.res.Configuration
-import android.view.View
 import android.os.Process
 import android.util.Log
 import android.view.Gravity
@@ -29,30 +34,32 @@ class DemoActivity : Activity() {
     private enum class Page { HOME, PLANS, CHAT }
     private data class Plan(val id: String, val title: String, val details: String)
     private data class Line(val prompt: String, val reply: String)
-    private data class Style(val title: String, val label: String, val lines: List<Line>)
+    private data class Style(val title: String, val label: String, val tone: String, val welcome: String, val lines: List<Line>)
 
     private val plans = listOf(
         Plan("companion", "陪伴体验包", "小暖角色切换 · 预设陪伴对话"),
         Plan("daily", "生活体验包", "小暖日常问候 · 本机应用启动演示")
     )
+    // Same four prompts across characters make the persona differences observable,
+    // rather than changing both the question and the answer when a style is selected.
     private val styles = listOf(
-        Style("严厉的慈父", "慈父", listOf(
-            Line("我不想起床。", "天亮了，慢慢坐起来，先喝口水。今天也要打起精神。"),
-            Line("今天做点什么？", "吃好早饭，找件自己喜欢的小事做。日子要过得有滋味。"),
-            Line("我想听戏。", "好主意。去找一出喜欢的戏，听完再来和我聊聊。"),
-            Line("你会一直在吗？", "想聊的时候可以来找小暖，也别忘了和身边的人常联系。")
+        Style("严厉的慈父", "慈父", "讲原则，也会照顾你", "有什么话就直说。别一个人闷在心里。", listOf(
+            Line("心情不太好。", "心里不痛快就说出来，别硬扛着。先喝口水，坐稳了，咱们把事情一件一件理清楚。"),
+            Line("想出门走走。", "可以去。先看天气，带好钥匙和手机，路上别着急。走得稳，比走得远重要。"),
+            Line("一个人在家有点闷。", "老闷在屋里可不行。起来活动活动，再给熟悉的朋友打个电话，别总把自己关着。"),
+            Line("听点什么好？", "先听一段喜欢的戏，舒舒心。听一会儿也记得歇歇眼睛，别一直盯着屏幕。")
         )),
-        Style("高冷的御姐", "御姐", listOf(
-            Line("有点无聊。", "那就挑一件有趣的事做。你可比自己想的有办法。"),
-            Line("我想出门走走。", "不错。出门前看看天气，带好钥匙，慢慢走。"),
-            Line("今天心情不好。", "我听着。不必急着把心情整理得很漂亮。"),
-            Line("我想放点音乐。", "找首熟悉的好歌。好音乐从来不用赶时间。")
+        Style("高冷的御姐", "御姐", "话不多，却有自己的分寸", "想说什么就说。不必先把心情整理好。", listOf(
+            Line("心情不太好。", "不用勉强自己说没事。你说，我听着。事情再乱，也总能一件件收拾。"),
+            Line("想出门走走。", "去吧。天凉就添件衣服，阳光好就多走两步。别赶，风景又不会跑。"),
+            Line("一个人在家有点闷。", "那就换换空气。挑一件你真想做的事，别让无聊替你安排今天。"),
+            Line("听点什么好？", "听一首熟悉的老歌，或者看部好电影。你想热闹一点，还是安静一点？")
         )),
-        Style("傻甜的小妹", "小妹", listOf(
-            Line("早上好！", "早安呀！今天的小太阳已经上线啦！"),
-            Line("讲个笑话。", "一只猫说要减肥，结果先把体重秤藏起来啦。"),
-            Line("想回忆以前。", "好呀！以前你最爱去哪里玩？"),
-            Line("想找人说话。", "我在这里陪你聊聊，也可以给家人朋友问声好呀。")
+        Style("傻甜的小妹", "小妹", "元气十足，爱逗你开心", "嘿嘿，今天想聊点什么呀？小妹在呢！", listOf(
+            Line("心情不太好。", "哎呀，心情打结啦？先送你一个云朵抱抱！想吐槽就说，小妹认真听着呢。"),
+            Line("想出门走走。", "好耶，出去晒晒太阳！钥匙、手机、外套，咱们一样一样检查好再出发～"),
+            Line("一个人在家有点闷。", "那我们找点乐子！听首歌、翻翻老照片，或者给朋友打声招呼？"),
+            Line("听点什么好？", "我投戏曲一票！听得高兴了，再换首老歌，今天的快乐慢慢攒起来～")
         ))
     )
 
@@ -66,10 +73,10 @@ class DemoActivity : Activity() {
     private var redrawOnResume = false
     private var chatRequested = false
 
-    private val bg = Color.rgb(250, 248, 244)
-    private val ink = Color.rgb(48, 53, 53)
-    private val muted = Color.rgb(112, 119, 117)
-    private val accent = Color.rgb(159, 88, 69)
+    private val bg = LauncherUiTokens.background
+    private val ink = LauncherUiTokens.ink
+    private val muted = LauncherUiTokens.muted
+    private val accent = LauncherUiTokens.terracotta
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,8 +124,39 @@ class DemoActivity : Activity() {
 
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
 
-    private fun bgShape(color: Int): GradientDrawable =
-        GradientDrawable().apply { setColor(color); cornerRadius = dp(10).toFloat() }
+    private fun pressable(color: Int, outlined: Boolean = false) = RippleDrawable(
+        ColorStateList.valueOf(Color.argb(35, 123, 83, 64)),
+        paper(color, outlined),
+        null
+    )
+
+    /** 56dp icon-only back target with the same touch treatment as HOME. */
+    private fun backControl(description: String, click: () -> Unit): FrameLayout =
+        FrameLayout(this).apply {
+            background = pressable(LauncherUiTokens.surface, outlined = true)
+            isClickable = true
+            isFocusable = true
+            contentDescription = description
+            setOnClickListener { click() }
+            addView(object : View(this@DemoActivity) {
+                private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = accent
+                    style = Paint.Style.STROKE
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                    strokeWidth = dp(2).toFloat()
+                }
+
+                override fun onDraw(canvas: Canvas) {
+                    super.onDraw(canvas)
+                    val cx = width / 2f
+                    val cy = height / 2f
+                    canvas.drawLine(cx + dp(11), cy, cx - dp(10), cy, stroke)
+                    canvas.drawLine(cx - dp(10), cy, cx - dp(2), cy - dp(8), stroke)
+                    canvas.drawLine(cx - dp(10), cy, cx - dp(2), cy + dp(8), stroke)
+                }
+            }, FrameLayout.LayoutParams(-1, -1))
+        }
 
     private fun line(
         parent: LinearLayout, text: String, size: Float = 18f,
@@ -144,7 +182,7 @@ class DemoActivity : Activity() {
             gravity = Gravity.CENTER
             minHeight = dp(56)
             setPadding(dp(12), dp(12), dp(12), dp(12))
-            background = bgShape(if (primary) accent else Color.WHITE)
+            background = pressable(if (primary) accent else LauncherUiTokens.surface, !primary)
             isClickable = true
             isFocusable = true
             setOnClickListener { run() }
@@ -172,11 +210,11 @@ class DemoActivity : Activity() {
             includeFontPadding = false
         }
 
-    private fun paper(color: Int = Color.WHITE, outlined: Boolean = false): GradientDrawable =
+    private fun paper(color: Int = LauncherUiTokens.surface, outlined: Boolean = false): GradientDrawable =
         GradientDrawable().apply {
             setColor(color)
-            cornerRadius = dp(12).toFloat()
-            if (outlined) setStroke(dp(1), Color.rgb(232, 223, 214))
+            cornerRadius = dp(LauncherUiTokens.cardRadiusDp).toFloat()
+            if (outlined) setStroke(dp(1), LauncherUiTokens.divider)
         }
 
     private fun actionText(value: String, primary: Boolean = false, click: () -> Unit) =
@@ -184,7 +222,7 @@ class DemoActivity : Activity() {
             gravity = Gravity.CENTER
             minHeight = dp(48)
             setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = paper(if (primary) accent else Color.WHITE, !primary)
+            background = pressable(if (primary) accent else LauncherUiTokens.surface, !primary)
             isClickable = true
             isFocusable = true
             setOnClickListener { click() }
@@ -204,8 +242,9 @@ class DemoActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(8), dp(20), dp(8))
         }
-        bar.addView(actionText("‹  返回", false) { onBackPressed() },
-            LinearLayout.LayoutParams(dp(112), dp(52)))
+        bar.addView(backControl(if (page == Page.PLANS) "返回我的服务" else "返回桌面") {
+            onBackPressed()
+        }, LinearLayout.LayoutParams(dp(56), dp(56)))
         bar.addView(label(if (page == Page.HOME) "我的服务" else "设备订阅", 23f, ink, true),
             LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(12) })
         bar.addView(label("本机演示", 14f, muted), LinearLayout.LayoutParams(-2, dp(52)))
@@ -362,17 +401,13 @@ class DemoActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(17), dp(6), dp(17), dp(6))
         }
-        header.addView(actionText("‹ 返回桌面") {
+        header.addView(backControl("返回桌面") {
             conversation.clear()
             finish()
-        }, LinearLayout.LayoutParams(dp(135), dp(50)))
+        }, LinearLayout.LayoutParams(dp(56), dp(56)))
         header.addView(label("小暖", 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(50), 1f).apply { leftMargin = dp(18) })
-        header.addView(actionText("清空本轮") {
-            conversation.clear()
-            drawChat()
-        }, LinearLayout.LayoutParams(dp(115), dp(50)))
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(64)))
+            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(14) })
+        root.addView(header, LinearLayout.LayoutParams(-1, dp(72)))
 
         val area = LinearLayout(this).apply {
             orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
@@ -384,21 +419,19 @@ class DemoActivity : Activity() {
         val profile = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(14), dp(if (landscape) 28 else 9), dp(14), dp(12))
+            setPadding(dp(14), dp(if (landscape) 25 else 14), dp(14), dp(14))
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)
+            ).apply { cornerRadius = dp(LauncherUiTokens.companionRadiusDp).toFloat() }
         }
-        val orb = label("✦", 34f, Color.WHITE, true).apply {
-            gravity = Gravity.CENTER
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(
-                Color.rgb(246, 213, 193), Color.rgb(182, 125, 103), Color.rgb(228, 196, 174)
-            )).apply { shape = GradientDrawable.OVAL }
-            contentDescription = "小暖陪伴标志"
-        }
+        val orb = LauncherUiTokens.companionOrb(this)
+        orb.contentDescription = "小暖陪伴标志"
         profile.addView(orb, LinearLayout.LayoutParams(dp(68), dp(68)))
-        profile.addView(label("小暖", 28f, ink, true).apply { gravity = Gravity.CENTER },
+        profile.addView(label(styles[styleIndex].title, 25f, ink, true).apply { gravity = Gravity.CENTER },
             LinearLayout.LayoutParams(-1, dp(42)))
-        profile.addView(label("陪你聊聊生活中的小事", 15f, muted).apply {
+        profile.addView(label(styles[styleIndex].tone, 15f, muted).apply {
             gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(-1, dp(29)))
+        }, LinearLayout.LayoutParams(-1, dp(30)))
         profile.addView(label("本地模拟对话 · 非真实 AI", 14f, accent, true).apply {
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, dp(32)))
@@ -407,7 +440,7 @@ class DemoActivity : Activity() {
             val selected = styleIndex == index
             stylesRow.addView(label(style.label, 16f, if (selected) Color.WHITE else ink, true).apply {
                 gravity = Gravity.CENTER
-                background = paper(if (selected) accent else Color.WHITE, !selected)
+                background = pressable(if (selected) accent else LauncherUiTokens.surface, !selected)
                 isClickable = true
                 isFocusable = true
                 contentDescription = "切换小暖风格：${style.title}"
@@ -484,22 +517,22 @@ class DemoActivity : Activity() {
     private fun renderMessages(container: LinearLayout, scroll: ScrollView) {
         container.removeAllViews()
         if (conversation.isEmpty()) {
-            container.addView(label("想聊些什么？从下方选一句开始吧。", 17f, muted).apply {
+            container.addView(label(styles[styleIndex].welcome, 17f, muted).apply {
                 gravity = Gravity.CENTER
             }, LinearLayout.LayoutParams(-1, dp(104)))
         } else {
             conversation.forEach { exchange ->
                 val userRow = LinearLayout(this).apply { gravity = Gravity.END }
                 userRow.addView(label("你：${exchange.prompt}", 17f).apply {
-                    background = paper(Color.rgb(239, 229, 218))
+                    background = paper(LauncherUiTokens.messageUser)
                     setPadding(dp(14), dp(11), dp(14), dp(11))
                 }, LinearLayout.LayoutParams(-2, -2))
                 container.addView(userRow, LinearLayout.LayoutParams(-1, -2).apply {
                     topMargin = dp(12)
                 })
                 val replyRow = LinearLayout(this).apply { gravity = Gravity.START }
-                replyRow.addView(label("小暖：${exchange.reply}", 17f).apply {
-                    background = paper(Color.rgb(249, 247, 244), outlined = true)
+                replyRow.addView(label("小暖 · ${styles[styleIndex].label}：${exchange.reply}", 17f).apply {
+                    background = paper(LauncherUiTokens.messageAssistant, outlined = true)
                     setPadding(dp(14), dp(11), dp(14), dp(11))
                 }, LinearLayout.LayoutParams(-2, -2))
                 container.addView(replyRow, LinearLayout.LayoutParams(-1, -2).apply {
