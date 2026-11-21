@@ -26,6 +26,11 @@ internal object LauncherUiTokens {
     val messageAssistant = surface
     // Family call uses the exact HOME action tint; danger follows HOME SOS.
     val familyCallIcon = Color.rgb(226, 242, 237)
+    val albumIcon = Color.rgb(251, 237, 217)
+    val videoIcon = Color.rgb(225, 236, 248)
+    val musicIcon = Color.rgb(246, 232, 243)
+    val healthIcon = Color.rgb(229, 242, 226)
+    val newsIcon = Color.rgb(232, 236, 246)
     val danger = Color.rgb(157, 50, 43)
 
     const val cardRadiusDp = 16
