@@ -1,0 +1,72 @@
+# Public-repository prototype release. No signing secrets or private artifact relay.
+# Create a tag only after approved JQ source has been promoted through test -> prod.
+name: Publish Jianqu prototype prerelease
+
+on:
+  push:
+    tags:
+      - 'preview-jianqu-v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jianqu-public-release
+  cancel-in-progress: false
+
+jobs:
+  prerelease:
+    if: github.repository == 'sanchuang-dev/jianqu-senior-agent'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require tag on exact prod commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          sha="$(git rev-parse HEAD)"
+          short="${sha:0:7}"
+          [[ "$tag" =~ ^preview-jianqu-v[0-9]+\.[0-9]+\.[0-9]+-[a-f0-9]{7}$ ]] || exit 1
+          [[ "$tag" == *-"$short" ]] || { echo '::error::Tag does not match source commit'; exit 1; }
+          git fetch --no-tags origin +refs/heads/prod:refs/remotes/origin/prod
+          [[ "$sha" == "$(git rev-parse origin/prod)" ]] || {
+            echo '::error::Only accepted prod HEAD can be published'; exit 1;
+          }
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - name: Install Android SDK 35
+        run: sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK and lint
+        shell: bash
+        run: bash ./gradlew --no-daemon --max-workers=2 :app:assembleDebug :app:lintDebug --console=plain
+      - name: Verify APK bytes and fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          size=$(stat -c '%s' "$apk")
+          (( size > 100000 && size < 100000000 ))
+          cp "$apk" "$RUNNER_TEMP/jianqu-demo.apk"
+          ( cd "$RUNNER_TEMP"; sha256sum jianqu-demo.apk | tee SHA256SUMS.txt )
+          echo "RELEASE_TAG=$GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"
+          echo "APK_SIZE_BYTES=$size" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub prerelease is a staging artifact: proto-infra prod dispatch separately verifies SHA-256 and publishes to /d/." >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish public, clearly labeled prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME"             "$RUNNER_TEMP/jianqu-demo.apk#jianqu-demo.apk"             "$RUNNER_TEMP/SHA256SUMS.txt#SHA256SUMS.txt"             --repo "$GITHUB_REPOSITORY"             --verify-tag             --prerelease             --title "闺蜜机 / 小暖 · $GITHUB_REF_NAME (仅供演示的 Debug APK)"             --notes "仅供测试的 Android V0.2 Launcher 原型：SOS 完全不能真实求救、报警或通知任何人；家人通话是模拟状态，精选商城无交易能力；小暖和设备订阅也为本地模拟。请勿将本 APK 作为养老设备的救援渠道。APK 使用 GitHub Runner 的 Debug 签名，覆盖升级不保证成功；仅完成模拟器验收，供应商真机未验收。"
