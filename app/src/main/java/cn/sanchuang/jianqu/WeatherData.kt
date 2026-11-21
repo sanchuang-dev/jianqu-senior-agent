@@ -26,6 +26,8 @@ internal object WeatherData {
     const val LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
     private const val UA = "JianquLauncher/0.1.0-dev (https://github.com/sanchuang-dev/jianqu-senior-agent)"
     private const val CACHE_PREFS = "met_weather_cache"
+    private const val THROTTLE_UNTIL = "throttle_until"
+    private const val THROTTLE_MS = 10L * 60L * 1000L
     private val executor = Executors.newSingleThreadExecutor()
     private val ui = Handler(Looper.getMainLooper())
     private val chinaZone = ZoneId.of("Asia/Shanghai")
@@ -103,6 +105,13 @@ internal object WeatherData {
                     return@execute
                 }
                 if (request.cancelled) return@execute
+                // A server throttle applies to this entire app, not just the currently selected city.
+                val retryAfter = app.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE)
+                    .getLong(THROTTLE_UNTIL, 0L)
+                if (retryAfter > now) {
+                    post(request, callback, available, "天气服务正在限流，请稍后再试")
+                    return@execute
+                }
                 // An invalid cache must not send If-Modified-Since: HTTP 304 cannot repair its body.
                 val response = fetch(city, if (available != null) cache else null, request)
                 if (request.cancelled) return@execute
@@ -111,6 +120,11 @@ internal object WeatherData {
                 post(request, callback, fresh, null)
             } catch (error: Exception) {
                 if (request.cancelled) return@execute
+                if (error.message == "HTTP 429") {
+                    // Persist a conservative backoff across screen visits and process restarts.
+                    app.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE).edit()
+                        .putLong(THROTTLE_UNTIL, System.currentTimeMillis() + THROTTLE_MS).apply()
+                }
                 Log.w("JianquWeather", "Unable to refresh MET weather", error)
                 val prior = cache?.let { runCatching { parse(it.body, city, it.expires) }.getOrNull() }
                 val message = when {
