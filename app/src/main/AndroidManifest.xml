@@ -14,7 +14,8 @@
         android:icon="@drawable/sanchuang_logo"
         android:supportsRtl="true">
         <activity android:name=".WeatherActivity" android:exported="false" />
-        <activity android:name=".DemoActivity" android:exported="false" />
+        <activity android:name=".DemoActivity" android:exported="false"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".LauncherActivity"
             android:exported="true"
