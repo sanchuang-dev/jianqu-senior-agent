@@ -12,6 +12,7 @@
         android:theme="@style/LauncherTheme"
         android:icon="@drawable/sanchuang_logo"
         android:supportsRtl="true">
+        <activity android:name=".WeatherActivity" android:exported="false" />
         <activity android:name=".DemoActivity" android:exported="false" />
         <activity
             android:name=".LauncherActivity"
