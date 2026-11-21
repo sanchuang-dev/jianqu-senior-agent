@@ -28,6 +28,7 @@ internal object LauncherUiTokens {
     val familyCallIcon = Color.rgb(226, 242, 237)
     val albumIcon = Color.rgb(251, 237, 217)
     val videoIcon = Color.rgb(225, 236, 248)
+    val storeIcon = Color.rgb(250, 226, 219)
     val musicIcon = Color.rgb(246, 232, 243)
     val healthIcon = Color.rgb(229, 242, 226)
     val newsIcon = Color.rgb(232, 236, 246)
