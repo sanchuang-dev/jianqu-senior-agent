@@ -75,6 +75,7 @@ class LauncherActivity : Activity() {
     private val uiPreferences by lazy { getSharedPreferences("launcher_ui", MODE_PRIVATE) }
     private var page = Page.HOME
     private var restoreHomeOnResume = false
+    private var returningFromWeather = false
 
     private val quickActions = listOf(
         QuickAction("家人通话", 0, Color.rgb(226, 242, 237)),
@@ -128,7 +129,10 @@ class LauncherActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (restoreHomeOnResume) {
+        if (returningFromWeather) {
+            returningFromWeather = false
+            showHome()
+        } else if (restoreHomeOnResume) {
             restoreHomeOnResume = false
             showHome()
         } else if (page == Page.ALL_APPS) {
@@ -271,15 +275,25 @@ class LauncherActivity : Activity() {
             background = touch(Color.rgb(244, 239, 229), 16)
             isClickable = true
             isFocusable = true
-            contentDescription = "当地天气，查看未来七天预报，目前未接入天气服务"
+            contentDescription = "天气，查看真实的七日预报"
             setOnClickListener {
-                unavailable("未来七天天气", "当前是 Launcher 界面原型，尚未接入天气数据。后续可在这里选择城市并查看七日预报。")
+                returningFromWeather = true
+                startActivity(Intent(this@LauncherActivity, WeatherActivity::class.java))
             }
         }
-        val chosenCity = uiPreferences.getString("weather_city", "").orEmpty().trim()
-        val weatherHeading = if (chosenCity.isEmpty()) "☁  当地天气" else "☁  $chosenCity · 天气"
+        val chosenCity = WeatherCity.current(this)
+        val weatherPlace = WeatherCity.place(this)
+        val weatherHeading = if (weatherPlace == null) "☁  当地天气" else "☁  ${weatherPlace.name} · 天气"
         weather.addView(text(weatherHeading, 16f, ink, true))
-        weather.addView(text("七日预报 · 待接入  ›", 12f, muted),
+        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
+        val weatherSummary = when {
+            weatherPlace == null -> "选择城市 · 七日预报  ›"
+            !WeatherData.consented(this) -> "免费天气 · 点此启用  ›"
+            cachedWeather == null -> "联网查询七日天气  ›"
+            cachedWeather.stale -> "${cachedWeather.nearTemperature}° · 缓存过期  ›"
+            else -> "${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
+        }
+        weather.addView(text(weatherSummary, 12f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         line.addView(weather, LinearLayout.LayoutParams(
             dp(if (landscape) 245 else 180), dp(if (landscape) 72 else 88)
@@ -440,9 +454,9 @@ class LauncherActivity : Activity() {
 
         content.addView(text("桌面偏好", 17f, ink, true),
             LinearLayout.LayoutParams(-1, dp(38)))
-        val city = uiPreferences.getString("weather_city", "").orEmpty().trim()
+        val city = WeatherCity.current(this)
         addSettingsItem(content, "天气城市",
-            if (city.isEmpty()) "尚未选择城市 · 天气数据未接入" else "$city · 天气数据未接入") {
+            if (city.isEmpty()) "尚未选择城市 · 不读取设备定位" else "$city · 点击更换") {
             showCityDialog()
         }
         addSettingsItem(content, "Wi-Fi 与网络", "打开 Android 的网络设置") {
@@ -500,34 +514,7 @@ class LauncherActivity : Activity() {
         })
     }
 
-    private fun showCityDialog() {
-        val input = EditText(this).apply {
-            setSingleLine(true)
-            textSize = 18f
-            hint = "例如：广州"
-            filters = arrayOf(InputFilter.LengthFilter(20))
-            inputType = InputType.TYPE_CLASS_TEXT
-            setText(uiPreferences.getString("weather_city", "").orEmpty())
-            setSelection(text.length)
-        }
-        val wrapper = FrameLayout(this).apply {
-            setPadding(dp(20), dp(8), dp(20), dp(5))
-            addView(input, FrameLayout.LayoutParams(-1, dp(58)))
-        }
-        AlertDialog.Builder(this)
-            .setTitle("选择天气城市")
-            .setMessage("仅保存本机城市名称；天气预报尚未接入，不会请求定位权限。")
-            .setView(wrapper)
-            .setNegativeButton("取消", null)
-            .setPositiveButton("保存") { _, _ ->
-                val city = input.text.toString().trim()
-                uiPreferences.edit().apply {
-                    if (city.isBlank()) remove("weather_city") else putString("weather_city", city)
-                }.apply()
-                showSettings()
-            }
-            .show()
-    }
+    private fun showCityDialog() = WeatherCity.showPicker(this) { showSettings() }
 
     private fun openAndroidSettings(action: String) {
         try {
