@@ -5,8 +5,8 @@
 ## 1. 项目定位
 - 本仓库仅负责**普通 Android 设备可安装的闺蜜机 Launcher + 设备订阅 +「小暖」模拟原型**；「见趣」只是暂定产品名，三创是企业品牌，小暖是 Agent 名称。
 - 与 [ai-mirror](https://github.com/sanchuang-dev/ai-mirror) 的五端 Web/业务产品分工：`ai-mirror` 继续拥有五端总体产品基线；本仓库拥有该 Android 原型的具体需求、界面与实现，不另复制五端产品需求。
-- **分期产品事实源**：[docs/product/PRD-v0.1.md](docs/product/PRD-v0.1.md) 是 JQ-002／JQ-003 已有实施及验收的基线；[docs/product/PRD-v0.2.md](docs/product/PRD-v0.2.md) 是第二期 Launcher 界面与流程的独立**讨论稿**（尚未批准施工）。Issue 仅承担工作项及验收合同，不在多处维护冲突需求。
-- **当前状态**：JQ-002 Launcher 最小底座已合入 dev，JQ-003 设备订阅／小暖 Mock 仍在 Draft PR，真实闺蜜机验收未完成。V0.2 仅获授权创建产品 PRD，**不自动授权第二期 APK 施工、合并、真实 AI、支付或发布**。V0.1 仍为单 APK、本地 Mock、无后端与账户的实施合同。
+- **分期产品事实源**：[docs/product/PRD-v0.1.md](docs/product/PRD-v0.1.md) 是 JQ-002／JQ-003 已有实施及验收的基线；[docs/product/PRD-v0.2.md](docs/product/PRD-v0.2.md) 是第二期 Launcher 界面与流程的独立**讨论稿**（部分 UI 卡已单独授权实施，需求候选不等于可直接上线）。Issue 仅承担工作项及验收合同，不在多处维护冲突需求。
+- **授权边界**：JQ-002 与 JQ-003 已进入 dev；第二期 JQ-004 HOME 卡已单独授权，其他卡仍依据各自 Issue 合同执行。实际设备验收仍未完成。PRD 建立、代码合并不自动授权真实 AI、支付、生产部署或发布。V0.1 仍为单 APK、本地 Mock、无后端与账户的实施合同。
 
 ## 2. 技术与设备边界
 - 参考供应商配置为 Android 11+、4GB+64GB 起、21.5–32 英寸可旋转竖屏镜面机；**供应商建议不等于已到货实机**。普通第三方 APK 安装；不预设 Root、系统签名、预装、Device Owner 或厂家 ROM 权限。

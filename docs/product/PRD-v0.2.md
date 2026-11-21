@@ -1,7 +1,7 @@
 # 闺蜜机 Launcher｜第二期 PRD V0.2（产品与交互设计稿）
 
-> 日期：2026-11-20  
-> 状态：**讨论稿／待产品确认，尚未授权 V0.2 施工**  
+> 初版：2026-11-20；更新：2026-11-21
+> 状态：**第二期产品讨论稿；JQ-004 已单独授权实施，其余候选功能仍待逐项确认和验收**
 > 产品：三创（SANCHUANG）闺蜜机 Launcher；「见趣」仍为暂定产品名；AI 伙伴名称「小暖」  
 > 目标设备：普通安装 APK 的 Android 11+、4GB RAM 起步的竖屏优先可旋转大屏设备  
 > 所有者：本仓库拥有 Android Launcher 的产品与界面需求；ai-mirror 仍拥有五端总体业务基线
@@ -19,7 +19,7 @@
 
 **版本分工：**
 
-1. [V0.1 PRD](PRD-v0.1.md)：保留为 JQ-002／JQ-003 的功能、构建、验收基线。已有 Launcher 底座进入 dev；JQ-003 仍处于 Draft PR，真实闺蜜机验收尚未完成。
+1. [V0.1 PRD](PRD-v0.1.md)：保留为 JQ-002／JQ-003 的功能、构建、验收基线。Launcher 底座和 JQ-003 本地 Mock 已进入 dev；真实闺蜜机验收尚未完成。
 2. **V0.2（本文）**：重新定义闺蜜机桌面首页、十个固定入口、天气、内容、亲情通话、求助及服务入口；负责下一期的页面地图、交互要求与待决策事项。
 3. [ai-mirror 闺蜜机产品基线](https://github.com/sanchuang-dev/ai-mirror/blob/main/docs/product/elder-companion-v0.1.md)：负责商城、内容、会员、AI、个人/公共使用等总体业务契约。Launcher 优先调用现有业务能力，不复制平台后台、结算、内容生产及账户设计。
 
@@ -278,14 +278,14 @@
 3. 最小可点击链路：HOME → 天气 7 日；HOME → 小暖；HOME → 全部应用；HOME → 家人通话模拟流程。
 4. 复用内容页面模板与现有商城／订阅业务，避免四套播放器、第二套商城。
 5. 独立进行设备验证和 TWeCall/SOS 外部能力可行性 POC；之后再决定是否纳入实装。
-6. 各工程切片以新增 Issue 的验收合同为准；**本 PRD 创建不授权修改 APK、合并 JQ-003、发版、支付或真实求助上线**。
+6. 各工程切片以新增 Issue 的验收合同为准；**本 PRD 创建本身不授权其它卡施工、发版、支付或真实求助上线；JQ-004 已获独立实施授权，JQ-003 已并入 dev**。
 
 ## 12. 相关事实源
 
 - [V0.1 PRD](PRD-v0.1.md) — 已有 Android 原型与 JQ-002/JQ-003 实施基线
 - [JQ-001 阶段验收](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)
 - [JQ-002 Launcher 实现](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/2)
-- [JQ-003 本地 Mock 与 Draft PR](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/5)
+- [JQ-003 本地 Mock（已合并 PR）](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/5)
 - [ai-mirror 闺蜜机总体产品基线](https://github.com/sanchuang-dev/ai-mirror/blob/main/docs/product/elder-companion-v0.1.md)
 - [三创组织协作规则](https://github.com/sanchuang-dev/.github/blob/main/AGENTS.md)
 

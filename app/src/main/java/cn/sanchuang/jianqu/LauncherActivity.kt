@@ -2,6 +2,7 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.graphics.Color
@@ -104,12 +105,12 @@ class LauncherActivity : Activity() {
         root.addView(label("熟悉的应用，就在这里。", 17f, secondary),
             LinearLayout.LayoutParams(-1, dp(34)))
 
-        val device = label("设备服务 · 原型开发中", 18f, ink, true).apply {
+        val device = label("我的闺蜜机 · 设备服务", 18f, ink, true).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(18), 0, dp(10), 0)
             background = panel(Color.WHITE, 14)
             setOnClickListener {
-                Toast.makeText(context, "订阅与小暖演示尚未加入", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@LauncherActivity, DemoActivity::class.java))
             }
         }
         val deviceLp = LinearLayout.LayoutParams(-1, dp(68)).apply {

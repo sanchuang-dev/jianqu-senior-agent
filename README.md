@@ -2,38 +2,41 @@
 
 > 三创科技（SANCHUANG） ·「见趣」为暂定产品名 ·「小暖」为已确认的 AI 伙伴名
 >
-> **当前 dev 代码基线：JQ-002 Launcher 最小底座**。设备订阅与小暖本地 Mock 在 [JQ-003 Draft PR](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/5)，未合入 dev，真实闺蜜机尚未验收。**第二期 V0.2 目前仅是产品/界面讨论稿，不代表第二期功能已实现。**
+> **工程基线：** JQ-002 的真实 Android Launcher 底座与 JQ-003 的本地设备订阅／小暖 Mock 均已并入 `dev`；第二期 HOME 改版和十个固定入口以 [PRD V0.2](docs/product/PRD-v0.2.md) 与 [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7) 为依据。**尚未完成实际闺蜜机验收。**
 
-## 项目范围
+## V0.1 已有能力
 
-一个普通安装的 Kotlin Android APK（Android 11+）：三创品牌桌面、全部系统允许发现的可启动已安装应用、真实打开应用。后续加入本地模拟设备订阅及小暖预设对话。
+这是普通 Android 11+ 设备可安装的单 APK 演示原型，不是量产桌面或真正的养老 Agent。
 
-**V0.1 只是玩具**：无后端、真实模型、语音识别/合成、支付或账户；不需要 Root、厂家签名或系统级锁机。屏幕以供应商资料中的可旋转竖屏为参考，尚未真机验收。
+- **真实系统能力**：可作为普通 Android HOME，显示并启动系统允许发现的所有可启动已安装 App。
+- **模拟设备订阅**：在「我的闺蜜机」选择虚构套餐、模拟开通当前机器；可选同时演示另外两台虚构设备。
+- **小暖模拟**：一个 AI 伙伴名称、三种候选说话风格，各四条本地预设问答；显式标明「模拟 AI」。
+- **受控真实动作**：用户确认后通过 Android `LauncherApps` 启动系统真实已安装的 App。
+- **演示数据**：套餐资格仅存在本机 `SharedPreferences`，会话不落盘，退出清理；可重置本地 Mock。
 
-## 构建和试用 JQ-002
+不包括真实 LLM、ASR/TTS、云端服务、支付、账号、医疗建议、机构管理、设备锁。构建通过不代表真实设备已验收。
 
-环境：JDK 17+、Android SDK Platform 35；使用仓库内 Gradle Wrapper，无需系统 Gradle。
+## 第二期 V0.2
+
+设计新的平衡型 HOME：时间日期与天气、小暖专区、十个固定功能、独立 SOS、单独全部应用页面。09「设置」、10「全部应用」固定；01–08 的名称／排列为讨论候选。服务源、微信通话、SOS、天气等真实接入需要单独验证，不应以 Mock 冒充上线能力。
+
+**版本真相源按阶段划分，不混用：**
+- [PRD V0.1](docs/product/PRD-v0.1.md)：JQ-002/JQ-003 已有原型实施及设备验收合同。
+- [PRD V0.2](docs/product/PRD-v0.2.md)：第二期 Launcher 界面与业务入口产品地图。
+- [AGENTS.md](AGENTS.md)：仓库分支、权限与数据边界。
+- [JQ-001 #1](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)：一期最终设备验收。
+- [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7)：HOME 主屏 UI 与交互实施合同。
+
+## 构建与验收
+
+环境：JDK 17+、Android SDK Platform 35。使用仓库内 Gradle Wrapper，一个工程，一个 APK：
 
 ```bash
-./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug :app:lintDebug
 # APK: app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-安装后，可从系统的「默认应用/主屏幕应用」中选择「闺蜜机（演示）」。首次进入后应显示当前用户可启动的系统应用；点击会实际启动相应 App。可通过系统设置改回原桌面。
+通过 Android 的「默认应用 / 主屏幕应用」选择「闺蜜机（演示）」，可以在系统设置中恢复原桌面。调试 APK 未承诺正式签名或可覆盖升级。
 
-桌面内「设备服务」目前只显示下一阶段的提示，这是 **JQ-002 预留入口，不代表已完成订阅与小暖**。企业标识已从用户提供的 `sanchuang-web.zip` 中的 `logo-icon-512.png` 派生轻量透明 PNG，并用于桌面品牌栏与 APK 图标。素材包原件仍在对话附件中，本仓库只纳入适配后的这一张图；「见趣」仍是暂定产品名。
-
-## 文档
-
-- [第一期 PRD V0.1 — 已有工程实施基线](docs/product/PRD-v0.1.md)
-- [第二期 PRD V0.2 — 新版桌面与功能原型讨论稿](docs/product/PRD-v0.2.md)
-- [仓库约束](AGENTS.md)
-- [阶段里程碑](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)
-- [JQ-002 Launcher 底座](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/2)
-- [JQ-003 本地 Mock](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/3)
-
-## 验收边界
-
-- **已验证**：JQ-002 构建证据见其对应 PR；JQ-003 的 Debug APK 也曾完成构建与 GitHub Actions 检查，证据见 Draft PR。构建不等于真机功能验收。
-- **尚未验证**：真实设备将本应用设为默认 HOME、App 启动行为、屏幕旋转、换机适配；不能用构建成功代替这些行为测试。
+**验收边界**：供应商所述 21.5—32 英寸、Android 11+、4GB+64GB、可旋转竖屏是参考值；真实机型、ROM、分辨率、方向、Home 返回和实际应用启动均需设备证据。PR/CI/编译成功只代表对应层级的检查。
