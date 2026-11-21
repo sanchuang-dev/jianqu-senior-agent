@@ -234,12 +234,16 @@ class LauncherActivity : Activity() {
     }
 
     private fun buildEnvironment(body: LinearLayout) {
-        val line = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
+        val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
         }
-        val clocks = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        clocks.addView(TextClock(this).apply {
+        // Date and weather form one left-aligned environment group.
+        // The right-hand area stays visually empty until artwork is supplied.
+        val environment = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        environment.addView(TextClock(this).apply {
             format12Hour = "hh:mm"
             format24Hour = "HH:mm"
             textSize = if (landscape) 34f else 42f
@@ -247,45 +251,44 @@ class LauncherActivity : Activity() {
             setTypeface(null, Typeface.BOLD)
             includeFontPadding = false
         })
-        clocks.addView(TextClock(this).apply {
+        environment.addView(TextClock(this).apply {
             format12Hour = "M月d日 EEEE"
             format24Hour = "M月d日 EEEE"
             textSize = 14f
             setTextColor(muted)
         })
-        line.addView(clocks, LinearLayout.LayoutParams(0, dp(if (landscape) 80 else 100), 1f))
 
-        val weather = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        val weatherPlace = WeatherCity.place(this)
+        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
+        val weatherLabel = when {
+            weatherPlace == null -> "☁  选择城市  ›"
+            !WeatherData.consented(this) -> "☁  ${weatherPlace.name} · 启用天气  ›"
+            cachedWeather == null -> "☁  ${weatherPlace.name} · 查询天气  ›"
+            cachedWeather.stale ->
+                "☁  ${weatherPlace.name} · ${cachedWeather.nearTemperature}° · 缓存过期  ›"
+            else ->
+                "☁  ${weatherPlace.name} · ${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
+        }
+        environment.addView(text(weatherLabel, if (landscape) 15f else 13f, terracotta).apply {
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(15), 0, dp(10), 0)
-            background = touch(Color.rgb(244, 239, 229), 16)
+            background = touch(backgroundColor, 12)
+            setPadding(dp(3), 0, dp(3), 0)
             isClickable = true
             isFocusable = true
-            contentDescription = "天气，查看真实的七日预报"
+            contentDescription = "天气，查看七日预报"
             setOnClickListener {
                 returningFromWeather = true
                 startActivity(Intent(this@LauncherActivity, WeatherActivity::class.java))
             }
-        }
-        val chosenCity = WeatherCity.current(this)
-        val weatherPlace = WeatherCity.place(this)
-        val weatherHeading = if (weatherPlace == null) "☁  当地天气" else "☁  ${weatherPlace.name} · 天气"
-        weather.addView(text(weatherHeading, 16f, ink, true))
-        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
-        val weatherSummary = when {
-            weatherPlace == null -> "选择城市 · 七日预报  ›"
-            !WeatherData.consented(this) -> "免费天气 · 点此启用  ›"
-            cachedWeather == null -> "联网查询七日天气  ›"
-            cachedWeather.stale -> "${cachedWeather.nearTemperature}° · 缓存过期  ›"
-            else -> "${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
-        }
-        weather.addView(text(weatherSummary, 12f, muted),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        line.addView(weather, LinearLayout.LayoutParams(
-            dp(if (landscape) 245 else 180), dp(if (landscape) 72 else 88)
-        ))
-        body.addView(line)
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
+
+        val infoWidth = if (landscape) 360 else 262
+        row.addView(environment, LinearLayout.LayoutParams(dp(infoWidth), -2))
+        // Intentional blank area; no placeholder drawing or fake artwork.
+        row.addView(View(this), LinearLayout.LayoutParams(0, dp(116), 1f))
+        body.addView(row)
     }
 
     private fun buildCompanion(body: LinearLayout) {
