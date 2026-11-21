@@ -2,9 +2,9 @@ name: Android prototype APK (debug)
 
 on:
   pull_request:
-    branches: [dev]
+    branches: [dev, test, prod]
   push:
-    branches: [dev]
+    branches: [dev, test, prod]
   workflow_dispatch:
 
 permissions:
