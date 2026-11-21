@@ -94,13 +94,17 @@ internal object WeatherData {
             val cache = readCache(app, city)
             try {
                 if (!consented(app)) throw IOException("天气服务尚未启用")
+                if (request.cancelled) return@execute
                 val now = System.currentTimeMillis()
                 val available = cache?.let { runCatching { parse(it.body, city, it.expires) }.getOrNull() }
                 if (cache != null && cache.expires > now) {
-                    post(request, callback, available, if (available == null) "本机缓存异常，缓存到期后再更新" else null)
+                    // Never repeat the same request before MET's Expires, even if the local body is corrupt.
+                    post(request, callback, available, if (available == null) "本机缓存异常，等待服务商缓存到期后重新获取" else null)
                     return@execute
                 }
-                val response = fetch(city, cache, request)
+                if (request.cancelled) return@execute
+                // An invalid cache must not send If-Modified-Since: HTTP 304 cannot repair its body.
+                val response = fetch(city, if (available != null) cache else null, request)
                 if (request.cancelled) return@execute
                 val fresh = parse(response.body, city, response.expires)
                 saveCache(app, response)
