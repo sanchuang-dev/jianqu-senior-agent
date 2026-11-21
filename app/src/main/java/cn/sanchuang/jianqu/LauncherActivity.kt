@@ -58,11 +58,11 @@ class LauncherActivity : Activity() {
 
     private data class QuickAction(val title: String, val icon: Int, val color: Int)
 
-    private val backgroundColor = Color.rgb(250, 248, 244)
-    private val ink = Color.rgb(48, 53, 53)
-    private val muted = Color.rgb(112, 119, 117)
-    private val terracotta = Color.rgb(159, 88, 69)
-    private val divider = Color.rgb(235, 231, 225)
+    private val backgroundColor = LauncherUiTokens.background
+    private val ink = LauncherUiTokens.ink
+    private val muted = LauncherUiTokens.muted
+    private val terracotta = LauncherUiTokens.terracotta
+    private val divider = LauncherUiTokens.divider
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var apps: LauncherApps
@@ -309,8 +309,8 @@ class LauncherActivity : Activity() {
             background = RippleDrawable(
                 ColorStateList.valueOf(Color.argb(35, 120, 70, 55)),
                 GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(Color.rgb(250, 231, 218), Color.rgb(252, 242, 227))).apply {
-                    cornerRadius = dp(20).toFloat()
+                    intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)).apply {
+                    cornerRadius = dp(LauncherUiTokens.companionRadiusDp).toFloat()
                 }, null
             )
             contentDescription = "小暖，进入本地模拟陪伴交互"
@@ -323,18 +323,7 @@ class LauncherActivity : Activity() {
                 )
             }
         }
-        val orb = FrameLayout(this).apply {
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(255, 249, 232), Color.rgb(241, 152, 125), Color.rgb(214, 119, 127))).apply {
-                shape = GradientDrawable.OVAL
-            }
-        }
-        orb.addView(View(this).apply {
-            background = GradientDrawable().apply {
-                setColor(Color.argb(130, 255, 255, 255))
-                shape = GradientDrawable.OVAL
-            }
-        }, FrameLayout.LayoutParams(dp(23), dp(23), Gravity.CENTER))
+        val orb = LauncherUiTokens.companionOrb(this)
         tile.addView(orb, LinearLayout.LayoutParams(dp(if (landscape) 58 else 70), dp(if (landscape) 58 else 70)))
         val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         copy.addView(text("小暖", if (landscape) 21f else 25f, ink, true))
@@ -368,7 +357,7 @@ class LauncherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(if (landscape) 7 else 11), dp(6), dp(4), dp(6))
-            background = touch(Color.rgb(255, 254, 252), 16, divider)
+            background = touch(LauncherUiTokens.surface, LauncherUiTokens.cardRadiusDp, divider)
             isClickable = true
             isFocusable = true
             contentDescription = action.title
