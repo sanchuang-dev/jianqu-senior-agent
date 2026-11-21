@@ -50,7 +50,7 @@ import java.util.concurrent.RejectedExecutionException
 class LauncherActivity : Activity() {
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
-    private enum class QuickActionDestination { PLACEHOLDER, SERVICES, SETTINGS, ALL_APPS }
+    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, SERVICES, SETTINGS, ALL_APPS }
 
     private data class QuickAction(
         val title: String,
@@ -79,7 +79,7 @@ class LauncherActivity : Activity() {
     private var returningFromWeather = false
 
     private val quickActions = listOf(
-        QuickAction("家人通话", R.drawable.ic_home_video_camera, Color.rgb(226, 242, 237), QuickActionDestination.PLACEHOLDER),
+        QuickAction("家人通话", R.drawable.ic_home_video_camera, LauncherUiTokens.familyCallIcon, QuickActionDestination.FAMILY_CALL),
         QuickAction("家庭相册", R.drawable.ic_home_images, Color.rgb(251, 237, 217), QuickActionDestination.PLACEHOLDER),
         QuickAction("影视节目", R.drawable.ic_home_film_strip, Color.rgb(225, 236, 248), QuickActionDestination.PLACEHOLDER),
         QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, Color.rgb(250, 226, 219), QuickActionDestination.PLACEHOLDER),
@@ -161,18 +161,10 @@ class LauncherActivity : Activity() {
     private val landscape get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     private fun shape(color: Int, radius: Int, stroke: Int? = null): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-            if (stroke != null) setStroke(dp(1), stroke)
-        }
+        LauncherUiTokens.shape(this, color, radius, stroke)
 
     private fun touch(color: Int, radius: Int, border: Int? = null): RippleDrawable =
-        RippleDrawable(
-            ColorStateList.valueOf(Color.argb(35, 123, 83, 64)),
-            shape(color, radius, border),
-            null
-        )
+        LauncherUiTokens.touch(this, color, radius, border)
 
     private fun text(
         value: String,
@@ -317,7 +309,7 @@ class LauncherActivity : Activity() {
         val orb = LauncherUiTokens.companionOrb(this)
         tile.addView(orb, LinearLayout.LayoutParams(dp(if (landscape) 58 else 70), dp(if (landscape) 58 else 70)))
         val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        copy.addView(text("小暖", if (landscape) 21f else 25f, ink, true))
+        copy.addView(text("小暖", if (landscape) LauncherUiTokens.headingCompactSp else LauncherUiTokens.headingLargeSp, ink, true))
         copy.addView(text("想聊聊天，还是一起做点什么？", if (landscape) 13f else 14f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         copy.addView(text("本地模拟体验 · 非真实 AI", 12f, terracotta),
@@ -353,7 +345,7 @@ class LauncherActivity : Activity() {
             isFocusable = true
             contentDescription = action.title
             val iconBox = FrameLayout(this@LauncherActivity).apply {
-                background = shape(action.color, 13)
+                background = shape(action.color, LauncherUiTokens.iconWellRadiusDp)
             }
             iconBox.addView(ImageView(this@LauncherActivity).apply {
                 setImageResource(action.iconRes)
@@ -387,7 +379,7 @@ class LauncherActivity : Activity() {
                     .show()
             }
         }
-        val icon = text("SOS", 17f, Color.rgb(157, 50, 43), true)
+        val icon = text("SOS", 17f, LauncherUiTokens.danger, true)
         row.addView(icon)
         row.addView(text("  紧急求助", 17f, Color.rgb(132, 52, 48), true),
             LinearLayout.LayoutParams(0, -2, 1f))
@@ -398,6 +390,7 @@ class LauncherActivity : Activity() {
     private fun openQuickAction(destination: QuickActionDestination, name: String) {
         when (destination) {
             QuickActionDestination.ALL_APPS -> showAllApps()
+            QuickActionDestination.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
             QuickActionDestination.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
             QuickActionDestination.SETTINGS -> showSettings()
             QuickActionDestination.PLACEHOLDER -> unavailable(
