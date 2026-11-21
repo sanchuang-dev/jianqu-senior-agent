@@ -277,11 +277,14 @@ class LauncherActivity : Activity() {
                     cornerRadius = dp(20).toFloat()
                 }, null
             )
-            contentDescription = "小暖，点击进入交互，当前为尚未接入的演示入口"
+            contentDescription = "小暖，进入本地模拟陪伴交互"
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                unavailable("小暖 · 陪伴助手", "这是小暖的固定桌面入口。当前 dev 版本尚未合入小暖交互；后续接入后，点击将直接进入小暖。")
+                startActivity(
+                    Intent(this@LauncherActivity, DemoActivity::class.java)
+                        .putExtra(DemoActivity.EXTRA_OPEN_CHAT, true)
+                )
             }
         }
         val orb = FrameLayout(this).apply {
@@ -301,7 +304,7 @@ class LauncherActivity : Activity() {
         copy.addView(text("小暖", if (landscape) 21f else 25f, ink, true))
         copy.addView(text("想聊聊天，还是一起做点什么？", if (landscape) 13f else 14f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        copy.addView(text("陪伴体验 · 待接入", 12f, terracotta),
+        copy.addView(text("本地模拟体验 · 非真实 AI", 12f, terracotta),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         tile.addView(copy, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
         tile.addView(text("›", 35f, terracotta))
@@ -373,6 +376,7 @@ class LauncherActivity : Activity() {
     private fun openQuickAction(kind: Int, name: String) {
         when (kind) {
             9 -> showAllApps()
+            7 -> startActivity(Intent(this, DemoActivity::class.java))
             8 -> AlertDialog.Builder(this)
                 .setTitle("设备设置")
                 .setMessage("Launcher 自身设置页面将在后续接入。现在可打开 Android 系统设置；不会修改或锁定系统权限。")
