@@ -21,6 +21,9 @@ import android.widget.Toast
  * Only fictional device entitlements are stored; conversations stay in memory.
  */
 class DemoActivity : Activity() {
+    companion object {
+        const val EXTRA_OPEN_CHAT = "cn.sanchuang.jianqu.extra.OPEN_CHAT"
+    }
     private enum class Page { HOME, PLANS, CHAT }
     private data class Plan(val id: String, val title: String, val details: String)
     private data class Line(val prompt: String, val reply: String)
@@ -59,6 +62,7 @@ class DemoActivity : Activity() {
     private var styleIndex = 0
     private val conversation = mutableListOf<Line>()
     private var redrawOnResume = false
+    private var chatRequested = false
 
     private val bg = Color.rgb(245, 246, 248)
     private val ink = Color.rgb(27, 30, 35)
@@ -67,7 +71,12 @@ class DemoActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        chatRequested = intent?.getBooleanExtra(EXTRA_OPEN_CHAT, false) == true
+        page = if (chatRequested && planFor(devices[0]) != null) Page.CHAT else Page.HOME
         draw()
+        if (chatRequested && page == Page.HOME) {
+            Toast.makeText(this, "请先模拟开通设备服务，即可体验小暖", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onStop() {
@@ -262,7 +271,7 @@ class DemoActivity : Activity() {
                 val edit = prefs.edit()
                 devices.take(count).forEach { edit.putString("subscription_$it", plan.id) }
                 edit.apply()
-                page = Page.HOME
+                page = if (chatRequested) Page.CHAT else Page.HOME
                 draw()
                 Toast.makeText(this, "模拟开通成功", Toast.LENGTH_SHORT).show()
             }.show()
