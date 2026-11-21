@@ -43,7 +43,7 @@ class FamilyCallActivity : Activity() {
     private val accent = LauncherUiTokens.terracotta
     private val surface = LauncherUiTokens.surface
     private val border = LauncherUiTokens.divider
-    private val danger = Color.rgb(166, 58, 56)
+    private val danger = LauncherUiTokens.danger
 
     private fun dp(n: Int) = (resources.displayMetrics.density * n + 0.5f).toInt()
     private fun wide() =
@@ -97,19 +97,15 @@ class FamilyCallActivity : Activity() {
         draw()
     }
 
-    private fun shape(fill: Int = surface, outline: Boolean = false, radius: Int = 16): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(fill)
-            cornerRadius = dp(radius).toFloat()
-            if (outline) setStroke(dp(1), border)
-        }
+    private fun shape(
+        fill: Int = surface,
+        outline: Boolean = false,
+        radius: Int = LauncherUiTokens.cardRadiusDp
+    ): GradientDrawable =
+        LauncherUiTokens.shape(this, fill, radius, if (outline) border else null)
 
     private fun ripple(fill: Int = surface, outlined: Boolean = false): RippleDrawable =
-        RippleDrawable(
-            ColorStateList.valueOf(Color.argb(30, 100, 60, 46)),
-            shape(fill, outlined),
-            null
-        )
+        LauncherUiTokens.touch(this, fill, LauncherUiTokens.cardRadiusDp, if (outlined) border else null)
 
     private fun text(value: String, size: Float, color: Int = ink, bold: Boolean = false): TextView =
         TextView(this).apply {
@@ -132,7 +128,7 @@ class FamilyCallActivity : Activity() {
         text(label, 16f, if (primary || negative) Color.WHITE else accent, true).apply {
             gravity = Gravity.CENTER
             setPadding(dp(12), dp(10), dp(12), dp(10))
-            minHeight = dp(52)
+            minHeight = dp(LauncherUiTokens.minActionHeightDp)
             background = ripple(
                 when {
                     negative -> danger
@@ -151,17 +147,12 @@ class FamilyCallActivity : Activity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(space) })
     }
 
-    private fun makePanel(tinted: Boolean): LinearLayout =
+    private fun makePanel(): LinearLayout =
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pad = dp(if (wide()) 22 else 19)
             setPadding(pad, dp(18), pad, dp(20))
-            background = if (tinted)
-                GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                    intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)).apply {
-                    cornerRadius = dp(LauncherUiTokens.companionRadiusDp).toFloat()
-                }
-            else shape(surface, outline = true)
+            background = shape(surface, outline = true)
         }
 
     private fun titleFor(): String = when (screen) {
@@ -190,9 +181,9 @@ class FamilyCallActivity : Activity() {
         Screen.FINISHED -> "这是手动选择的演示结果，不代表实际网络、设备或家人的状态。"
     }
 
-    private fun identity(): LinearLayout = makePanel(true).apply {
+    private fun identity(): LinearLayout = makePanel().apply {
         val icon = FrameLayout(this@FamilyCallActivity).apply {
-            background = shape(Color.rgb(255, 247, 238), radius = 18)
+            background = shape(LauncherUiTokens.familyCallIcon, radius = LauncherUiTokens.iconWellRadiusDp)
             contentDescription = "视频通话演示标志"
         }
         icon.addView(ImageView(this@FamilyCallActivity).apply {
@@ -204,7 +195,7 @@ class FamilyCallActivity : Activity() {
         addView(icon, LinearLayout.LayoutParams(dp(66), dp(66)))
 
         line(this, "家人通话 · 交互原型", 14f, accent, true, 16)
-        line(this, titleFor(), if (wide()) 25f else 24f, ink, true, 10)
+        line(this, titleFor(), if (wide()) LauncherUiTokens.headingCompactSp else LauncherUiTokens.headingLargeSp, ink, true, 10)
         line(this, explainFor(), 16f, muted, space = 13)
 
         if (screen != Screen.UNBOUND && contact != null) {
@@ -226,7 +217,7 @@ class FamilyCallActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(12), dp(7), dp(10), dp(7))
-                background = ripple(Color.rgb(251, 248, 243), true)
+                background = ripple(bg, true)
                 isFocusable = true
                 isClickable = true
                 contentDescription = "选择${person.title}，${person.relation}"
@@ -234,7 +225,7 @@ class FamilyCallActivity : Activity() {
             }
             row.addView(text(person.initial, 19f, accent, true).apply {
                 gravity = Gravity.CENTER
-                background = shape(Color.rgb(249, 229, 218))
+                background = shape(LauncherUiTokens.familyCallIcon, radius = LauncherUiTokens.iconWellRadiusDp)
             }, LinearLayout.LayoutParams(dp(50), dp(50)))
             val labels = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -278,7 +269,7 @@ class FamilyCallActivity : Activity() {
         }
     }
 
-    private fun actions(): LinearLayout = makePanel(false).apply {
+    private fun actions(): LinearLayout = makePanel().apply {
         when (screen) {
             Screen.UNBOUND -> {
                 line(this, "如何与家人联系？", 21f, ink, true, 0)
@@ -306,7 +297,7 @@ class FamilyCallActivity : Activity() {
                 val blank = text("没有真实视频画面\n没有采集麦克风声音", 17f, muted).apply {
                     gravity = Gravity.CENTER
                     setPadding(dp(12), dp(16), dp(12), dp(16))
-                    background = shape(Color.rgb(246, 243, 239), outline = true)
+                    background = shape(bg, outline = true)
                 }
                 addView(blank, LinearLayout.LayoutParams(-1, dp(if (wide()) 120 else 160)).apply {
                     topMargin = dp(16)
@@ -350,7 +341,7 @@ class FamilyCallActivity : Activity() {
         }
         val back = text("‹", 35f, accent).apply {
             gravity = Gravity.CENTER
-            minHeight = dp(52)
+            minHeight = dp(LauncherUiTokens.minActionHeightDp)
             contentDescription = "返回桌面"
             background = ripple(surface, outlined = true)
             isFocusable = true
