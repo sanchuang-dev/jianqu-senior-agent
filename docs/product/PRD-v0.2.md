@@ -105,6 +105,12 @@
 | **09** | **设置** | 管理必要的设备/Launcher 选项 | 仅显示普通 APK 可调用的设置；必要时跳 Android 原生设置 | **[已确认] 固定** |
 | **10** | **全部应用** | 查找并启动系统允许看到的全部可启动 App | 真实 LauncherApps 等系统能力，独立应用目录，不要求业务白名单 | **[已确认] 固定** |
 
+**首页功能图标视觉规范（2026-11-21 维护者确认）：**
+- 采用 Phosphor Icons `@phosphor-icons/core v2.1.1` 的 Duotone 风格（MIT）；只选用本页十个图标，转换为本地 Android VectorDrawable，不引入运行时依赖、不联网加载整套图标库。
+- 图标映射：家人通话 `video-camera`、家庭相册 `images`、影视节目 `film-strip`、精选商城 `shopping-bag-open`、音乐戏曲 `music-notes`、健康讲座 `stethoscope`、建政栏目 `newspaper`、我的服务 `hand-heart`、设置 `gear`、全部应用 `squares-four`。
+- 保留原有柔和彩色底板和共享文字色；图标使用统一墨色与 20% 双层填色。横屏 32dp、竖屏 36dp；图标与文字并列，保留原有触控面积和入口顺序。
+- 第三方许可随 APK 保存在 `app/src/main/assets/licenses/PHOSPHOR-ICONS-LICENSE.txt`。
+
 **混合入口契约：** 某个入口可以是 Launcher 内置功能、已安装 App、现有 H5 或我们的服务模块。但必须定义点击结果和错误回退；若目标 App 不存在或业务服务未配置，提示“未安装/暂不可用”，不能以漂亮静态页面冒充功能已上线。
 
 ## 5. 关键用户流程与必备状态
