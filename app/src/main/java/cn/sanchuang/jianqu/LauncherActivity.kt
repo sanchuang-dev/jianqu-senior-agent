@@ -23,10 +23,16 @@ import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.provider.Settings
+import android.text.Editable
+import android.text.InputFilter
+import android.text.InputType
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.util.Log
 import android.view.Gravity
+import android.view.inputmethod.EditorInfo
 import android.view.View
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageView
@@ -48,7 +54,7 @@ import kotlin.math.min
  * until their independent JQ-005..011 contracts are implemented.
  */
 class LauncherActivity : Activity() {
-    private enum class Page { HOME, ALL_APPS }
+    private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
     private data class QuickAction(val title: String, val icon: Int, val color: Int)
 
@@ -62,6 +68,11 @@ class LauncherActivity : Activity() {
     private lateinit var apps: LauncherApps
     private lateinit var catalog: GridLayout
     private lateinit var appCount: TextView
+    private lateinit var searchInput: EditText
+    private var installedApps: List<LauncherActivityInfo> = emptyList()
+    private var appLoadVersion = 0
+    private var searchUpdate: Runnable? = null
+    private val uiPreferences by lazy { getSharedPreferences("launcher_ui", MODE_PRIVATE) }
     private var page = Page.HOME
     private var restoreHomeOnResume = false
 
@@ -91,6 +102,11 @@ class LauncherActivity : Activity() {
         apps = getSystemService(LauncherApps::class.java)
         apps.registerCallback(packageCallback, main)
         showHome()
+        if (savedInstanceState == null && !uiPreferences.getBoolean("intro_seen", false)) {
+            main.post {
+                if (!isFinishing && !isDestroyed && page == Page.HOME) showFirstUseGuide()
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -122,12 +138,16 @@ class LauncherActivity : Activity() {
 
     @Deprecated("Android back navigation callback; HOME must remain the root destination.")
     override fun onBackPressed() {
-        if (page == Page.ALL_APPS) showHome()
-        // No-op on HOME: a launcher must not finish itself on Back.
+        when (page) {
+            Page.ALL_APPS, Page.SETTINGS -> showHome()
+            Page.HELP -> showSettings()
+            Page.HOME -> Unit // A launcher never closes itself on Back.
+        }
     }
 
     override fun onDestroy() {
         apps.unregisterCallback(packageCallback)
+        searchUpdate?.let(main::removeCallbacks)
         worker.shutdownNow()
         super.onDestroy()
     }
@@ -256,7 +276,9 @@ class LauncherActivity : Activity() {
                 unavailable("未来七天天气", "当前是 Launcher 界面原型，尚未接入天气数据。后续可在这里选择城市并查看七日预报。")
             }
         }
-        weather.addView(text("☁  当地天气", 16f, ink, true))
+        val chosenCity = uiPreferences.getString("weather_city", "").orEmpty().trim()
+        val weatherHeading = if (chosenCity.isEmpty()) "☁  当地天气" else "☁  $chosenCity · 天气"
+        weather.addView(text(weatherHeading, 16f, ink, true))
         weather.addView(text("七日预报 · 待接入  ›", 12f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         line.addView(weather, LinearLayout.LayoutParams(
@@ -377,18 +399,7 @@ class LauncherActivity : Activity() {
         when (kind) {
             9 -> showAllApps()
             7 -> startActivity(Intent(this, DemoActivity::class.java))
-            8 -> AlertDialog.Builder(this)
-                .setTitle("设备设置")
-                .setMessage("Launcher 自身设置页面将在后续接入。现在可打开 Android 系统设置；不会修改或锁定系统权限。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("打开系统设置") { _, _ ->
-                    try {
-                        startActivity(Intent(Settings.ACTION_SETTINGS))
-                    } catch (error: Exception) {
-                        Log.w("JianquLauncher", "System settings unavailable", error)
-                        Toast.makeText(this, "无法打开系统设置", Toast.LENGTH_SHORT).show()
-                    }
-                }.show()
+            8 -> showSettings()
             else -> unavailable(name, "“" + name + "”是第二期固定入口，目前尚未接入实际服务。没有发起通话、消费或其他外部操作。")
         }
     }
@@ -401,6 +412,189 @@ class LauncherActivity : Activity() {
             .show()
     }
 
+    private fun showSettings() {
+        page = Page.SETTINGS
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            setPadding(dp(19), dp(16), dp(19), dp(16))
+        }
+        setContentView(root)
+        root.addView(text("‹  返回桌面", 18f, terracotta, true).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showHome() }
+        }, LinearLayout.LayoutParams(-1, dp(48)))
+        root.addView(text("设置", 30f, ink, true), LinearLayout.LayoutParams(-1, dp(53)))
+        root.addView(text("管理本机桌面，系统设置由 Android 负责。", 14f, muted),
+            LinearLayout.LayoutParams(-1, dp(38)))
+
+        val scroll = ScrollView(this).apply { isFillViewport = true }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(12), 0, dp(16))
+        }
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        content.addView(text("桌面偏好", 17f, ink, true),
+            LinearLayout.LayoutParams(-1, dp(38)))
+        val city = uiPreferences.getString("weather_city", "").orEmpty().trim()
+        addSettingsItem(content, "天气城市",
+            if (city.isEmpty()) "尚未选择城市 · 天气数据未接入" else "$city · 天气数据未接入") {
+            showCityDialog()
+        }
+        addSettingsItem(content, "Wi-Fi 与网络", "打开 Android 的网络设置") {
+            openAndroidSettings(Settings.ACTION_WIFI_SETTINGS)
+        }
+        addSettingsItem(content, "屏幕与亮度", "打开 Android 的显示设置") {
+            openAndroidSettings(Settings.ACTION_DISPLAY_SETTINGS)
+        }
+        addSettingsItem(content, "默认主屏幕", "选择或更改 Android HOME 应用") {
+            openAndroidSettings(Settings.ACTION_HOME_SETTINGS)
+        }
+
+        content.addSpace(12)
+        content.addView(text("了解设备", 17f, ink, true),
+            LinearLayout.LayoutParams(-1, dp(40)))
+        addSettingsItem(content, "首次使用与帮助", "默认桌面、全部应用与安全提示") {
+            showHelp()
+        }
+        val version = runCatching {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        }.getOrNull() ?: "未知"
+        addSettingsItem(content, "关于闺蜜机", "版本 $version · 原型演示") {
+            AlertDialog.Builder(this)
+                .setTitle("闺蜜机（演示）")
+                .setMessage("版本 $version\n普通第三方 Android Launcher。本期小暖和设备订阅为本地模拟，其他服务需分别接入。")
+                .setPositiveButton("知道了", null)
+                .show()
+        }
+    }
+
+    private fun addSettingsItem(
+        container: LinearLayout,
+        title: String,
+        description: String,
+        action: () -> Unit
+    ) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(11), dp(15), dp(11))
+            background = touch(Color.WHITE, 14, divider)
+            isClickable = true
+            isFocusable = true
+            contentDescription = "$title，$description"
+            setOnClickListener { action() }
+        }
+        val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        copy.addView(text(title, 17f, ink, true))
+        copy.addView(text(description, 13f, muted),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(text("›", 26f, muted))
+        container.addView(row, LinearLayout.LayoutParams(-1, dp(78)).apply {
+            bottomMargin = dp(9)
+        })
+    }
+
+    private fun showCityDialog() {
+        val input = EditText(this).apply {
+            setSingleLine(true)
+            textSize = 18f
+            hint = "例如：广州"
+            filters = arrayOf(InputFilter.LengthFilter(20))
+            inputType = InputType.TYPE_CLASS_TEXT
+            setText(uiPreferences.getString("weather_city", "").orEmpty())
+            setSelection(text.length)
+        }
+        val wrapper = FrameLayout(this).apply {
+            setPadding(dp(20), dp(8), dp(20), dp(5))
+            addView(input, FrameLayout.LayoutParams(-1, dp(58)))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("选择天气城市")
+            .setMessage("仅保存本机城市名称；天气预报尚未接入，不会请求定位权限。")
+            .setView(wrapper)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存") { _, _ ->
+                val city = input.text.toString().trim()
+                uiPreferences.edit().apply {
+                    if (city.isBlank()) remove("weather_city") else putString("weather_city", city)
+                }.apply()
+                showSettings()
+            }
+            .show()
+    }
+
+    private fun openAndroidSettings(action: String) {
+        try {
+            startActivity(Intent(action))
+        } catch (error: Exception) {
+            Log.w("JianquLauncher", "Android settings unavailable: $action", error)
+            Toast.makeText(this, "当前设备无法打开该项系统设置", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun showHelp() {
+        page = Page.HELP
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            setPadding(dp(20), dp(16), dp(20), dp(20))
+        }
+        setContentView(root)
+        root.addView(text("‹  返回设置", 18f, terracotta, true).apply {
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showSettings() }
+        }, LinearLayout.LayoutParams(-1, dp(49)))
+        root.addView(text("首次使用与帮助", 28f, ink, true),
+            LinearLayout.LayoutParams(-1, dp(70)))
+        val scroll = ScrollView(this)
+        val items = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        scroll.addView(items)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        listOf(
+            "01 · 设为默认桌面" to "系统首次询问时选择「闺蜜机（演示）」；也可从设置中的「默认主屏幕」进入 Android 选择页。",
+            "02 · 找到全部应用" to "首页固定位置 10「全部应用」展示本机可启动的真实 App，支持输入名称搜索，点图标即可打开。",
+            "03 · 返回设备桌面" to "使用设备的 Home 键回到闺蜜机主页；在子页面点击左上角返回按钮。",
+            "04 · 服务与求助说明" to "天气、家人视频与 SOS 尚未接入真实服务。SOS 当前不能报警或通知护理人员；紧急情况请联系现场人员或使用可靠电话。"
+        ).forEach { (heading, detail) ->
+            val block = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(17), dp(18), dp(17), dp(18))
+                background = shape(Color.WHITE, 14, divider)
+            }
+            block.addView(text(heading, 18f, ink, true))
+            block.addView(text(detail, 15f, muted),
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+            items.addView(block, LinearLayout.LayoutParams(-1, -2).apply {
+                bottomMargin = dp(12)
+            })
+        }
+    }
+
+    private fun showFirstUseGuide() {
+        AlertDialog.Builder(this)
+            .setTitle("欢迎使用闺蜜机")
+            .setMessage("这是 Android 桌面原型。\n\n• 想查找其他 App？点「全部应用」。\n• 按设备 Home 键可返回闺蜜机。\n• 在「设置」里可选择默认主屏幕和城市。\n\n天气、通话与 SOS 尚未接入真实服务。")
+            .setPositiveButton("开始使用") { _, _ -> markIntroSeen() }
+            .setNeutralButton("查看设置") { _, _ ->
+                markIntroSeen()
+                showSettings()
+            }
+            .setNegativeButton("稍后") { _, _ -> markIntroSeen() }
+            .setOnCancelListener { markIntroSeen() }
+            .show()
+    }
+
+    private fun markIntroSeen() {
+        uiPreferences.edit().putBoolean("intro_seen", true).apply()
+    }
     private fun showAllApps() {
         page = Page.ALL_APPS
         restoreHomeOnResume = false
@@ -419,6 +613,43 @@ class LauncherActivity : Activity() {
         }
         root.addView(back, LinearLayout.LayoutParams(-1, dp(48)))
         root.addView(text("全部应用", 30f, ink, true), LinearLayout.LayoutParams(-1, dp(56)))
+        installedApps = emptyList()
+        val searchRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        searchInput = EditText(this).apply {
+            hint = "搜索已安装应用"
+            setSingleLine(true)
+            textSize = 16f
+            setTextColor(ink)
+            setHintTextColor(muted)
+            inputType = InputType.TYPE_CLASS_TEXT
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            background = shape(Color.WHITE, 14, divider)
+            setPadding(dp(14), dp(5), dp(10), dp(5))
+            contentDescription = "搜索已安装应用"
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable?) {
+                    searchUpdate?.let(main::removeCallbacks)
+                    val task = Runnable {
+                        if (page == Page.ALL_APPS) renderApps(installedApps)
+                    }
+                    searchUpdate = task
+                    main.postDelayed(task, 130)
+                }
+            })
+        }
+        searchRow.addView(searchInput, LinearLayout.LayoutParams(0, dp(52), 1f))
+        searchRow.addView(text("清除", 15f, terracotta, true).apply {
+            gravity = Gravity.CENTER
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { searchInput.text.clear() }
+        }, LinearLayout.LayoutParams(dp(58), dp(52)))
+        root.addView(searchRow, LinearLayout.LayoutParams(-1, dp(65)))
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -447,6 +678,7 @@ class LauncherActivity : Activity() {
 
     private fun refreshApps() {
         if (page != Page.ALL_APPS || isDestroyed || worker.isShutdown || !::catalog.isInitialized) return
+        val request = ++appLoadVersion
         try {
             worker.execute {
                 val result = runCatching {
@@ -454,8 +686,12 @@ class LauncherActivity : Activity() {
                         .sortedWith(compareBy(Collator.getInstance(Locale.CHINA)) { it.label.toString() })
                 }
                 main.post {
-                    if (page == Page.ALL_APPS && !isDestroyed && !isFinishing) {
-                        result.onSuccess(::renderApps).onFailure { error ->
+                    if (page == Page.ALL_APPS && request == appLoadVersion &&
+                        !isDestroyed && !isFinishing) {
+                        result.onSuccess { entries ->
+                            installedApps = entries
+                            renderApps(entries)
+                        }.onFailure { error ->
                             Log.e("JianquLauncher", "Cannot load installed applications", error)
                             catalog.removeAllViews()
                             appCount.text = getString(R.string.apps_unavailable)
@@ -470,17 +706,24 @@ class LauncherActivity : Activity() {
     }
 
     private fun renderApps(entries: List<LauncherActivityInfo>) {
-        if (page != Page.ALL_APPS) return
+        if (page != Page.ALL_APPS || !::catalog.isInitialized || !::searchInput.isInitialized) return
+        val query = searchInput.text.toString().trim()
+        val visibleApps = if (query.isEmpty()) entries else entries.filter {
+            it.label.toString().contains(query, ignoreCase = true) ||
+                it.componentName.packageName.contains(query, ignoreCase = true)
+        }
         catalog.removeAllViews()
-        appCount.text = getString(R.string.app_count, entries.size)
-        if (entries.isEmpty()) {
-            catalog.addView(text(getString(R.string.empty_apps), 17f, muted))
+        appCount.text = if (query.isEmpty()) getString(R.string.app_count, visibleApps.size)
+            else "找到 " + visibleApps.size + " / " + entries.size + " 个应用"
+        if (visibleApps.isEmpty()) {
+            val message = if (query.isEmpty()) getString(R.string.empty_apps) else "没有找到“" + query + "”"
+            catalog.addView(text(message, 17f, muted))
             return
         }
         val columns = catalog.columnCount
         val pixels = resources.displayMetrics.widthPixels
         val cell = ((pixels - dp(38) - dp(columns * 10)) / columns).coerceAtLeast(dp(90))
-        entries.forEach { entry ->
+        visibleApps.forEach { entry ->
             val box = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
