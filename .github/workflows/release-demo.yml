@@ -5,7 +5,7 @@ name: Publish Jianqu prototype prerelease
 on:
   push:
     tags:
-      - 'jianqu-demo-v*'
+      - 'preview-jianqu-v*'
 
 permissions:
   contents: write
@@ -31,7 +31,7 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           sha="$(git rev-parse HEAD)"
           short="${sha:0:7}"
-          [[ "$tag" =~ ^jianqu-demo-v[0-9]+\.[0-9]+\.[0-9]+-[a-f0-9]{7}$ ]] || exit 1
+          [[ "$tag" =~ ^preview-jianqu-v[0-9]+\.[0-9]+\.[0-9]+-[a-f0-9]{7}$ ]] || exit 1
           [[ "$tag" == *-"$short" ]] || { echo '::error::Tag does not match source commit'; exit 1; }
           git fetch --no-tags origin +refs/heads/prod:refs/remotes/origin/prod
           [[ "$sha" == "$(git rev-parse origin/prod)" ]] || {
@@ -60,10 +60,13 @@ jobs:
           (( size > 100000 && size < 100000000 ))
           cp "$apk" "$RUNNER_TEMP/jianqu-demo.apk"
           ( cd "$RUNNER_TEMP"; sha256sum jianqu-demo.apk | tee SHA256SUMS.txt )
+          echo "RELEASE_TAG=$GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"
+          echo "APK_SIZE_BYTES=$size" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub prerelease is a staging artifact: proto-infra prod dispatch separately verifies SHA-256 and publishes to /d/." >> "$GITHUB_STEP_SUMMARY"
       - name: Publish public, clearly labeled prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          gh release create "$GITHUB_REF_NAME"             "$RUNNER_TEMP/jianqu-demo.apk#jianqu-demo.apk"             "$RUNNER_TEMP/SHA256SUMS.txt#SHA256SUMS.txt"             --repo "$GITHUB_REPOSITORY"             --verify-tag             --prerelease             --title "闺蜜机 / 小暖 · $GITHUB_REF_NAME (Android debug prototype)"             --notes "纯本地模拟原型；无真实 AI、后台或支付。APK 使用 GitHub runner 的 Debug 签名，不保证后续覆盖升级。需要安装时请明确知晓其演示性质。构建成功不代表设备验收通过。"
+          gh release create "$GITHUB_REF_NAME"             "$RUNNER_TEMP/jianqu-demo.apk#jianqu-demo.apk"             "$RUNNER_TEMP/SHA256SUMS.txt#SHA256SUMS.txt"             --repo "$GITHUB_REPOSITORY"             --verify-tag             --prerelease             --title "闺蜜机 / 小暖 · $GITHUB_REF_NAME (仅供演示的 Debug APK)"             --notes "仅供测试的 Android V0.2 Launcher 原型：SOS 完全不能真实求救、报警或通知任何人；家人通话是模拟状态，精选商城无交易能力；小暖和设备订阅也为本地模拟。请勿将本 APK 作为养老设备的救援渠道。APK 使用 GitHub Runner 的 Debug 签名，覆盖升级不保证成功；仅完成模拟器验收，供应商真机未验收。"
