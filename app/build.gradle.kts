@@ -10,8 +10,8 @@ android {
         applicationId = "cn.sanchuang.jianqu"
         minSdk = 30
         targetSdk = 33
-        versionCode = 1
-        versionName = "0.1.0-dev"
+        versionCode = 2
+        versionName = "0.2.0-preview"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
