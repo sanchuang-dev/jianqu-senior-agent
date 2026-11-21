@@ -50,7 +50,7 @@ import java.util.concurrent.RejectedExecutionException
 class LauncherActivity : Activity() {
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
-    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, SERVICES, SETTINGS, ALL_APPS }
+    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
 
     private data class QuickAction(
         val title: String,
@@ -80,12 +80,12 @@ class LauncherActivity : Activity() {
 
     private val quickActions = listOf(
         QuickAction("家人通话", R.drawable.ic_home_video_camera, LauncherUiTokens.familyCallIcon, QuickActionDestination.FAMILY_CALL),
-        QuickAction("家庭相册", R.drawable.ic_home_images, Color.rgb(251, 237, 217), QuickActionDestination.PLACEHOLDER),
-        QuickAction("影视节目", R.drawable.ic_home_film_strip, Color.rgb(225, 236, 248), QuickActionDestination.PLACEHOLDER),
+        QuickAction("家庭相册", R.drawable.ic_home_images, LauncherUiTokens.albumIcon, QuickActionDestination.CONTENT_ALBUM),
+        QuickAction("影视节目", R.drawable.ic_home_film_strip, LauncherUiTokens.videoIcon, QuickActionDestination.CONTENT_VIDEO),
         QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, Color.rgb(250, 226, 219), QuickActionDestination.PLACEHOLDER),
-        QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, Color.rgb(246, 232, 243), QuickActionDestination.PLACEHOLDER),
-        QuickAction("健康讲座", R.drawable.ic_home_stethoscope, Color.rgb(229, 242, 226), QuickActionDestination.PLACEHOLDER),
-        QuickAction("建政栏目", R.drawable.ic_home_newspaper, Color.rgb(232, 236, 246), QuickActionDestination.PLACEHOLDER),
+        QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, LauncherUiTokens.musicIcon, QuickActionDestination.CONTENT_MUSIC),
+        QuickAction("健康讲座", R.drawable.ic_home_stethoscope, LauncherUiTokens.healthIcon, QuickActionDestination.CONTENT_HEALTH),
+        QuickAction("建政栏目", R.drawable.ic_home_newspaper, LauncherUiTokens.newsIcon, QuickActionDestination.CONTENT_NEWS),
         QuickAction("我的服务", R.drawable.ic_home_hand_heart, Color.rgb(248, 231, 227), QuickActionDestination.SERVICES),
         QuickAction("设置", R.drawable.ic_home_gear, Color.rgb(235, 235, 235), QuickActionDestination.SETTINGS),
         QuickAction("全部应用", R.drawable.ic_home_squares_four, Color.rgb(230, 227, 245), QuickActionDestination.ALL_APPS)
@@ -391,6 +391,11 @@ class LauncherActivity : Activity() {
         when (destination) {
             QuickActionDestination.ALL_APPS -> showAllApps()
             QuickActionDestination.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
+            QuickActionDestination.CONTENT_ALBUM -> openContent(ContentGalleryActivity.ALBUM)
+            QuickActionDestination.CONTENT_VIDEO -> openContent(ContentGalleryActivity.VIDEO)
+            QuickActionDestination.CONTENT_MUSIC -> openContent(ContentGalleryActivity.MUSIC)
+            QuickActionDestination.CONTENT_HEALTH -> openContent(ContentGalleryActivity.HEALTH)
+            QuickActionDestination.CONTENT_NEWS -> openContent(ContentGalleryActivity.NEWS)
             QuickActionDestination.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
             QuickActionDestination.SETTINGS -> showSettings()
             QuickActionDestination.PLACEHOLDER -> unavailable(
@@ -398,6 +403,11 @@ class LauncherActivity : Activity() {
                 "“" + name + "”是第二期固定入口，目前尚未接入实际服务。没有发起通话、消费或其他外部操作。"
             )
         }
+    }
+
+    private fun openContent(section: String) {
+        startActivity(Intent(this, ContentGalleryActivity::class.java)
+            .putExtra(ContentGalleryActivity.EXTRA_SECTION, section))
     }
 
     private fun unavailable(title: String, message: String) {
