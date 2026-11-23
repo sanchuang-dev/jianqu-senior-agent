@@ -17,7 +17,10 @@ import android.content.res.Configuration
 import android.os.Process
 import android.util.Log
 import android.view.Gravity
-import android.widget.CheckBox
+import android.widget.ImageView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -25,21 +28,19 @@ import android.widget.Toast
 
 /**
  * JQ-003 local mock: never communicates with payment, AI, account or device-ID services.
- * Only fictional device entitlements are stored; conversations stay in memory.
+ * Only a local rental expiry is stored for this device; conversations stay in memory.
  */
 class DemoActivity : Activity() {
     companion object {
         const val EXTRA_OPEN_CHAT = "cn.sanchuang.jianqu.extra.OPEN_CHAT"
     }
-    private enum class Page { HOME, PLANS, CHAT }
-    private data class Plan(val id: String, val title: String, val details: String)
+    private enum class Page { HOME, PAY, CHAT }
     private data class Line(val prompt: String, val reply: String)
     private data class Style(val title: String, val label: String, val tone: String, val welcome: String, val lines: List<Line>)
 
-    private val plans = listOf(
-        Plan("companion", "陪伴体验包", "小暖角色切换 · 预设陪伴对话"),
-        Plan("daily", "生活体验包", "小暖日常问候 · 本机应用启动演示")
-    )
+    private val rentalTermDays = 30L // Prototype-only period, not a commercial offer.
+    private val rentalTermMs = rentalTermDays * 24 * 60 * 60 * 1000
+    private val rentalDevice = "JQ-DEMO-01" // Single local demo machine; no external device enrollment.
     // Same four prompts across characters make the persona differences observable,
     // rather than changing both the question and the answer when a style is selected.
     private val styles = listOf(
@@ -63,11 +64,8 @@ class DemoActivity : Activity() {
         ))
     )
 
-    private val devices = listOf("演示设备 01", "演示设备 02", "演示设备 03")
     private val prefs by lazy { getSharedPreferences("jianqu_local_demo", MODE_PRIVATE) }
     private var page = Page.HOME
-    private var selectedPlan = plans.first().id
-    private var batch = false
     private var styleIndex = 0
     private val conversation = mutableListOf<Line>()
     private var redrawOnResume = false
@@ -118,7 +116,7 @@ class DemoActivity : Activity() {
                 conversation.clear()
                 finish() // Return to the true Launcher HOME, not an extra service landing page.
             }
-            Page.PLANS -> navigate(Page.HOME)
+            Page.PAY -> navigate(Page.HOME)
         }
     }
 
@@ -197,8 +195,10 @@ class DemoActivity : Activity() {
     }
 
     private fun wide(): Boolean =
-        resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
-            resources.configuration.screenWidthDp >= 650
+        // Some Android 11 emulator/display overrides retain a stale Configuration orientation.
+        // Use the actual window dimensions so narrow portrait layouts never get two columns.
+        resources.displayMetrics.widthPixels > resources.displayMetrics.heightPixels &&
+            resources.displayMetrics.widthPixels / resources.displayMetrics.density >= 650f
 
     private fun label(value: String, size: Float = 16f, color: Int = ink, bold: Boolean = false) =
         TextView(this).apply {
@@ -242,152 +242,156 @@ class DemoActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(8), dp(20), dp(8))
         }
-        bar.addView(backControl(if (page == Page.PLANS) "返回我的服务" else "返回桌面") {
+        bar.addView(backControl(if (page == Page.PAY) "返回设备租赁" else "返回桌面") {
             onBackPressed()
         }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        bar.addView(label(if (page == Page.HOME) "我的服务" else "设备订阅", 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(12) })
-        bar.addView(label("本机演示", 14f, muted), LinearLayout.LayoutParams(-2, dp(52)))
+        bar.addView(
+            label(if (page == Page.HOME) "设备租赁" else "扫码付款", 23f, ink, true),
+            LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(12) }
+        )
+        bar.addView(label("原型演示", 14f, muted), LinearLayout.LayoutParams(-2, dp(52)))
         root.addView(bar)
+
         val scroll = ScrollView(this).apply { isFillViewport = true }
         val body = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(4), dp(22), dp(28))
+            setPadding(dp(22), dp(10), dp(22), dp(28))
         }
         scroll.addView(body)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
-        if (page == Page.HOME) showHome(body) else showPlans(body)
+        if (page == Page.HOME) showRental(body) else showPayment(body)
     }
 
-    private fun planFor(device: String): Plan? =
-        plans.firstOrNull { it.id == prefs.getString("subscription_$device", null) }
+    private fun rentalExpiry(): Long = prefs.getLong("rental_expiry_ms", 0L)
 
-    private fun showHome(body: LinearLayout) {
+    private fun rentalDate(millis: Long): String =
+        SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(millis))
+
+    private fun showRental(body: LinearLayout) {
         val landscape = wide()
+        val expiry = rentalExpiry()
+        val active = expiry > System.currentTimeMillis()
         body.orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-        val status = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(15), dp(18), dp(18))
-            background = paper(outlined = true)
-        }
-        line(status, "当前设备 · JQ-DEMO-01", 15f, muted, top = 0)
-        val current = planFor(devices[0])
-        line(status, if (current == null) "尚未模拟开通" else "服务可用 · ${current.title}",
-            25f, ink, true, 16)
-        line(status, current?.details ?: "这是本机的设备服务演示，非真实账户与支付。", 16f, muted, top = 12)
-        line(status, "设备资格和小暖本地模拟对话彼此独立。", 15f, muted, top = 15)
-        line(status, "模拟设备记录", 18f, ink, true, 24)
-        devices.forEach { device ->
-            line(status, "$device  ·  ${planFor(device)?.title ?: "未开通"}", 16f, top = 13)
-        }
 
-        val actions = LinearLayout(this).apply {
+        val overview = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(15), dp(18), dp(18))
-            background = paper(outlined = true)
+            setPadding(dp(24), dp(23), dp(24), dp(25))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)
+            ).apply { cornerRadius = dp(18).toFloat() }
         }
-        line(actions, "设备服务", 24f, ink, true, 0)
-        line(actions, "管理演示套餐，不影响实际 Android 应用或设备权限。", 16f, muted, top = 10)
-        button(actions, if (current == null) "查看演示套餐" else "更换演示套餐", true) {
-            navigate(Page.PLANS)
+        line(overview, "见趣 · 闺蜜机", 21f, ink, true, 0)
+        line(overview, "本机编号  $rentalDevice", 15f, muted, top = 10)
+        val state = when {
+            active -> "租赁有效"
+            expiry > 0L -> "租赁已到期"
+            else -> "尚未租赁"
         }
-        line(actions, "需要展示多台设备开通？", 16f, muted, top = 24)
-        button(actions, "批量开通演示设备") {
-            batch = true
-            navigate(Page.PLANS)
-        }
-        button(actions, "重置演示数据") {
-            AlertDialog.Builder(this)
-                .setTitle("重置设备演示？")
-                .setMessage("仅清除三个模拟设备的套餐记录；不影响系统和其他应用。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("重置") { _, _ ->
-                    prefs.edit().clear().apply()
-                    conversation.clear()
-                    selectedPlan = plans.first().id
-                    batch = false
-                    draw()
-                }.show()
-        }
-        line(actions, "本地原型：不会扣费，不会绑定真实设备。", 14f, muted, top = 24)
-        if (landscape) {
-            body.addView(status, LinearLayout.LayoutParams(0, -2, 1.05f).apply {
-                rightMargin = dp(14)
-            })
-            body.addView(actions, LinearLayout.LayoutParams(0, -2, 1f))
-        } else {
-            body.addView(status, LinearLayout.LayoutParams(-1, -2))
-            body.addView(actions, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(14)
-            })
-        }
-    }
+        line(overview, state, 32f, if (active) accent else ink, true, 28)
+        line(
+            overview,
+            if (expiry > 0L) "租期至 ${rentalDate(expiry)}" else "租用这台设备，按期续租",
+            17f, muted, top = 10
+        )
 
-    private fun showPlans(body: LinearLayout) {
-        val landscape = wide()
-        body.orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-        val planColumn = LinearLayout(this).apply {
+        val action = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(15), dp(18), dp(18))
+            setPadding(dp(24), dp(21), dp(24), dp(24))
             background = paper(outlined = true)
         }
-        line(planColumn, "选择演示套餐", 23f, ink, true, top = 0)
-        line(planColumn, "仅用于本机体验，不产生订单和费用。", 15f, muted, top = 9)
-        plans.forEach { plan ->
-            val selected = selectedPlan == plan.id
-            button(planColumn, "${if (selected) "✓ " else ""}${plan.title} · ${plan.details}", selected) {
-                selectedPlan = plan.id
-                draw()
+        line(action, "闺蜜机月租", 24f, ink, true, 0)
+        line(action, "每期 30 天", 16f, muted, top = 10)
+        button(action, if (active) "扫码续租" else "扫码开通", true) {
+            navigate(Page.PAY)
+        }
+        line(action, "演示付款，不会实际扣费", 14f, muted, top = 15)
+        val resetLink = label("重置演示", 14f, muted).apply {
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                AlertDialog.Builder(this@DemoActivity)
+                    .setTitle("重置本机租赁？")
+                    .setMessage("仅清除当前设备的本地演示租期。")
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("重置") { _, _ ->
+                        prefs.edit().remove("rental_expiry_ms").apply()
+                        draw()
+                    }.show()
             }
         }
-        val confirmColumn = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(15), dp(18), dp(18))
-            background = paper(outlined = true)
-        }
-        line(confirmColumn, "开通范围", 23f, ink, true, top = 0)
-        line(confirmColumn, "当前设备：JQ-DEMO-01", 16f, muted, top = 12)
-        val check = CheckBox(this).apply {
-            text = "同时为另外两台模拟设备开通"
-            textSize = 17f
-            setTextColor(ink)
-            isChecked = batch
-            minHeight = dp(56)
-            setOnCheckedChangeListener { _, value -> batch = value }
-        }
-        confirmColumn.addView(check, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
-        line(confirmColumn, "批量记录是虚构演示，不对应真实设备。", 15f, muted, top = 6)
-        button(confirmColumn, "确认模拟开通", true) { confirmSubscription() }
-        button(confirmColumn, "返回我的服务") { navigate(Page.HOME) }
+        action.addView(resetLink, LinearLayout.LayoutParams(-1, dp(44)).apply {
+            topMargin = dp(8)
+        })
         if (landscape) {
-            body.addView(planColumn, LinearLayout.LayoutParams(0, -2, 1f).apply {
-                rightMargin = dp(14)
+            body.addView(overview, LinearLayout.LayoutParams(0, -2, 1.1f).apply {
+                rightMargin = dp(16)
             })
-            body.addView(confirmColumn, LinearLayout.LayoutParams(0, -2, 1f))
+            body.addView(action, LinearLayout.LayoutParams(0, -2, 1f))
         } else {
-            body.addView(planColumn, LinearLayout.LayoutParams(-1, -2))
-            body.addView(confirmColumn, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(14)
+            body.addView(overview, LinearLayout.LayoutParams(-1, -2))
+            body.addView(action, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(16)
             })
         }
     }
 
-    private fun confirmSubscription() {
-        val plan = plans.first { it.id == selectedPlan }
-        val count = if (batch) 3 else 1
-        AlertDialog.Builder(this)
-            .setTitle("确认模拟开通")
-            .setMessage("为 $count 台演示设备开通「${plan.title}」？\n\n原型演示，不会扣费。")
-            .setNegativeButton("取消", null)
-            .setPositiveButton("确认") { _, _ ->
-                val edit = prefs.edit()
-                devices.take(count).forEach { edit.putString("subscription_$it", plan.id) }
-                edit.apply()
-                page = Page.HOME
-                draw()
-                Toast.makeText(this, "模拟开通成功", Toast.LENGTH_SHORT).show()
-            }.show()
+    private fun showPayment(body: LinearLayout) {
+        val landscape = wide()
+        body.orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+
+        val order = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(21), dp(24), dp(22))
+        }
+        line(order, "闺蜜机租赁", 24f, ink, true, 0)
+        line(order, "¥99", 44f, accent, true, 22)
+        line(order, "演示金额 · 30 天", 16f, muted, top = 4)
+        line(order, "租赁设备  $rentalDevice", 16f, ink, top = 25)
+        if (rentalExpiry() > System.currentTimeMillis()) {
+            line(order, "当前租期至 ${rentalDate(rentalExpiry())}", 15f, muted, top = 10)
+        }
+
+        val payment = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(20), dp(16), dp(20), dp(20))
+            background = paper(outlined = true)
+        }
+        line(payment, "手机扫码付款", 23f, ink, true, 0)
+        val qr = ImageView(this).apply {
+            setImageResource(R.drawable.qr_rental_demo)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = "二维码演示图，不支持真实付款"
+        }
+        val qrSize = dp(if (landscape) 184 else 226)
+        payment.addView(qr, LinearLayout.LayoutParams(qrSize, qrSize).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            topMargin = dp(10)
+        })
+        line(payment, "演示二维码 · 无法真实付款", 14f, muted, top = 7)
+        button(payment, "模拟付款完成", true) { completeDemoPayment() }
+        if (landscape) {
+            body.addView(order, LinearLayout.LayoutParams(0, -2, 1f).apply {
+                rightMargin = dp(18)
+            })
+            body.addView(payment, LinearLayout.LayoutParams(0, -2, 1.1f))
+        } else {
+            body.addView(order, LinearLayout.LayoutParams(-1, -2))
+            body.addView(payment, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
+    private fun completeDemoPayment() {
+        // An explicit simulation action is the only path that changes this device's rental state.
+        // No payment SDK, network confirmation, or receipt is fabricated here.
+        val now = System.currentTimeMillis()
+        val nextExpiry = maxOf(now, rentalExpiry()) + rentalTermMs
+        prefs.edit().putLong("rental_expiry_ms", nextExpiry).apply()
+        page = Page.HOME
+        draw()
     }
 
     private fun drawChat() {
