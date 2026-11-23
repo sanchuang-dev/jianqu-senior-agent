@@ -19,10 +19,10 @@
 | 环节 | 已核对事实 | 证据 |
 | --- | --- | --- |
 | Windows 本地代码 | `dev` / `2e68c5081db52c6118dc53bcf23869a55348787f`；本次开始与结束工作区干净 | Windows 本地 `git status`、`git rev-parse` |
-| GitHub 开发基线 | `dev` / `2e68c50` | [dev 分支](https://github.com/sanchuang-dev/jianqu-senior-agent/tree/dev) |
+| GitHub 开发基线 | `dev` / `2e68c50` | [本轮 dev 提交](https://github.com/sanchuang-dev/jianqu-senior-agent/commit/2e68c5081db52c6118dc53bcf23869a55348787f) |
 | 验证分支 | `test` / `d1ae3ee` | [晋级 PR #24](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/24) |
 | 发布源分支 | `prod` / `823012187e9922f3769b27d9053bf9940d0b0cb2` | [晋级 PR #25](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/25) |
-| 代码一致性 | 检查时 `dev...prod` 的文件差异为空；晋级有独立提交历史，**不要把 SHA 不同误判为源码不同** | [分支比较](https://github.com/sanchuang-dev/jianqu-senior-agent/compare/dev...prod) |
+| 代码一致性 | 检查时 `dev...prod` 的文件差异为空；晋级有独立提交历史，**不要把 SHA 不同误判为源码不同** | [本轮固定提交比较](https://github.com/sanchuang-dev/jianqu-senior-agent/compare/2e68c5081db52c6118dc53bcf23869a55348787f...823012187e9922f3769b27d9053bf9940d0b0cb2) |
 | 预发布版本 | `preview-jianqu-v0.2.0-8230121`；APK 内 `versionCode=2`、`versionName=0.2.0-preview` | [GitHub Release](https://github.com/sanchuang-dev/jianqu-senior-agent/releases/tag/preview-jianqu-v0.2.0-8230121) |
 | GitHub 构建与预发布 | 2026-11-21 完成，相关 Actions 显示成功 | [prod APK 编译](https://github.com/sanchuang-dev/jianqu-senior-agent/actions/runs/44890760258) · [Release](https://github.com/sanchuang-dev/jianqu-senior-agent/actions/runs/44890804570) |
 | 原型下载部署工作流 | 2026-11-21 `proto-infra` 的 Publish Jianqu prototype APK `workflow_dispatch` 成功 | [部署运行 #44891082237](https://github.com/sanchuang-dev/proto-infra/actions/runs/44891082237) |
