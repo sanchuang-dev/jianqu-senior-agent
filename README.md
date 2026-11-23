@@ -27,6 +27,11 @@
 - [JQ-001 #1](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)：一期最终设备验收。
 - [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7)：HOME 主屏 UI 与交互实施合同。
 
+## 最新工程验证快照
+
+- [2026-11-23｜V0.2 工程进度与 Windows Android 11 验证](docs/verification/PROJECT-STATUS-2026-11-23.md)：发布位置、138 项定向回归、真实 HOME 链路、截图及尚未闭环的签名/OEM 验收风险。该报告是日期快照，不替代 PRD 或 Issue 验收合同。
+- [2026-11-23｜单机租赁订阅与二维码付款原型验收](docs/verification/JQ-003-rental-qr-2026-11-23.md)：取消多机/套餐演示；扫码付款原型、租期持久化、续租、取消及横竖屏截图。仅模拟，不收真实款。
+
 ## 构建与验收
 
 环境：JDK 17+、Android SDK Platform 35。使用仓库内 Gradle Wrapper，一个工程，一个 APK：
