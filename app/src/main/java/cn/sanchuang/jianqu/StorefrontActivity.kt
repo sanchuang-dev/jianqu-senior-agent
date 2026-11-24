@@ -1,264 +1,134 @@
 package cn.sanchuang.jianqu
 
 import android.app.Activity
-import android.content.res.ColorStateList
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 
-/**
- * JQ-010: the store target has not been approved.
- *
- * This is a local, non-transactional handoff surface. It never accesses an
- * external store, asks for account credentials, or claims a purchase succeeded.
- * Example failure states are manually selected and are NOT network diagnostics.
- */
-class StorefrontActivity : Activity() {
-    private enum class State { NOT_CONFIGURED, LOGIN_EXAMPLE, DEVICE_OFFLINE_EXAMPLE,
-        NETWORK_EXAMPLE, STORE_UNAVAILABLE_EXAMPLE }
-
-    private val ui = LauncherUiTokens
-    private val ink = ui.ink
-    private val muted = ui.muted
-    private val accent = ui.terracotta
-    private var state = State.NOT_CONFIGURED
-    private var resumeNeedsRedraw = false
-
-    private fun dp(n: Int) = (resources.displayMetrics.density * n + 0.5f).toInt()
-    private fun wide() =
-        resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
-            resources.configuration.screenWidthDp >= 650
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        // A shared device must never restore a previous user's example session.
-        state = State.NOT_CONFIGURED
-        draw()
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        draw()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        state = State.NOT_CONFIGURED
-        resumeNeedsRedraw = true
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (resumeNeedsRedraw) {
-            resumeNeedsRedraw = false
-            draw()
-        }
-    }
-
-    @Deprecated("The store handoff always returns directly to HOME.")
-    override fun onBackPressed() = leave()
-
-    private fun leave() {
-        state = State.NOT_CONFIGURED
-        finish()
-    }
-
-    private fun choose(next: State) {
-        state = next
-        draw()
-    }
-
-    private fun text(value: String, size: Float, color: Int = ink, bold: Boolean = false) =
+/** Shared visual shell for the two local, non-transactional service prototypes. */
+internal abstract class ServicePreviewActivity : Activity() {
+    protected val ui = LauncherUiTokens
+    protected fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
+    protected fun wide() = resources.displayMetrics.widthPixels > resources.displayMetrics.heightPixels &&
+        resources.displayMetrics.widthPixels / resources.displayMetrics.density >= 650f
+    protected fun text(value: String, size: Float = 16f, color: Int = ui.ink, bold: Boolean = false) =
         TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
+            text = value; textSize = size; setTextColor(color); includeFontPadding = false
             gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
             if (bold) setTypeface(null, Typeface.BOLD)
         }
-
-    private fun line(parent: LinearLayout, value: String, size: Float = 16f,
-                     color: Int = ink, bold: Boolean = false, top: Int = 10): TextView =
-        text(value, size, color, bold).also {
-            parent.addView(it, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(top)
-            })
-        }
-
-    private fun card() = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        val padding = dp(if (wide()) 21 else 18)
-        setPadding(padding, dp(19), padding, dp(20))
-        background = ui.shape(this@StorefrontActivity, ui.surface, ui.cardRadiusDp, ui.divider)
+    protected fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+    protected fun line(parent: LinearLayout, value: String, size: Float = 16f,
+                       color: Int = ui.ink, bold: Boolean = false, top: Int = 8): TextView =
+        text(value, size, color, bold).also { add(parent, it, top) }
+    protected fun add(parent: LinearLayout, view: View, top: Int = 10) {
+        parent.addView(view, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
     }
-
-    private fun button(label: String, primary: Boolean = false, onClick: () -> Unit) =
-        text(label, 16f, if (primary) Color.WHITE else accent, true).apply {
-            gravity = Gravity.CENTER
-            minHeight = dp(ui.minActionHeightDp)
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = ui.touch(this@StorefrontActivity,
-                if (primary) accent else ui.surface,
-                ui.cardRadiusDp,
-                if (primary) null else ui.divider)
-            isClickable = true
-            isFocusable = true
-            contentDescription = label
-            setOnClickListener { onClick() }
-        }
-
-    private fun addButton(parent: LinearLayout, label: String, primary: Boolean = false,
-                          top: Int = 11, onClick: () -> Unit) {
-        parent.addView(button(label, primary, onClick),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
+    protected fun panel(color: Int = ui.surface, border: Int? = ui.divider) = column().apply {
+        setPadding(dp(20), dp(19), dp(20), dp(20))
+        background = ui.shape(this@ServicePreviewActivity, color, 18, border)
     }
-
-    private fun header() = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(5), dp(16), dp(5))
-        addView(button("‹") { leave() }.apply {
-            textSize = 31f
-            contentDescription = "返回桌面"
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        addView(text("精选商城", 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply {
-                leftMargin = dp(14)
-            })
-        if (wide()) {
-            addView(text("本地承接原型 · 不可交易", 14f, accent, true))
+    protected fun action(parent: LinearLayout, title: String, desc: String, icon: Int, tint: Int,
+                         color: Int = ui.ink, click: () -> Unit) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(74); setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = ui.touch(this@ServicePreviewActivity, ui.surface, 14, ui.divider)
+            isClickable = true; isFocusable = true; contentDescription = "$title，$desc"
+            setOnClickListener { click() }
         }
-    }
-
-    private fun introduction() = card().apply {
-        val mark = FrameLayout(this@StorefrontActivity).apply {
-            background = ui.shape(this@StorefrontActivity,
-                ui.storeIcon, ui.iconWellRadiusDp)
-        }
-        mark.addView(ImageView(this@StorefrontActivity).apply {
-            setImageResource(R.drawable.ic_home_shopping_bag_open)
-            imageTintList = ColorStateList.valueOf(ink)
-            scaleType = ImageView.ScaleType.FIT_CENTER
+        row.addView(ImageView(this).apply {
+            setImageResource(icon); scaleType = ImageView.ScaleType.FIT_CENTER
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            background = ui.shape(this@ServicePreviewActivity, tint, 12)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }, FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER))
-        addView(mark, LinearLayout.LayoutParams(dp(68), dp(68)))
-
-        line(this, "精选商城", if (wide()) ui.headingCompactSp else ui.headingLargeSp,
-            ink, true, 16)
-        line(this, "现有商城的统一入口", 17f, ink, true, 10)
-        line(this, "商品、订单和付款由现有商城负责，Launcher 不处理交易。",
-            16f, muted, top = 12)
-        line(this, "当前未指定商城 App 或网页地址。", 15f, accent, true, 18)
+        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        val copy = column().apply {
+            line(this, title, 17f, color, true, 0)
+            line(this, desc, 13f, ui.muted, top = 5)
+        }
+        row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(12) })
+        row.addView(text("›", 25f, color), LinearLayout.LayoutParams(dp(20), -2))
+        add(parent, row, 10)
     }
-
-    private fun stateTitle() = when (state) {
-        State.NOT_CONFIGURED -> "商城尚未接入"
-        State.LOGIN_EXAMPLE -> "演示：需要登录"
-        State.DEVICE_OFFLINE_EXAMPLE -> "演示：设备未联网"
-        State.NETWORK_EXAMPLE -> "演示：网络中断"
-        State.STORE_UNAVAILABLE_EXAMPLE -> "演示：商城暂不可用"
-    }
-
-    private fun stateExplanation() = when (state) {
-        State.NOT_CONFIGURED ->
-            "尚未配置经过确认的商城目标，目前不能浏览商品、下单或支付。"
-        State.LOGIN_EXAMPLE ->
-            "此处只演示未登录提示；没有接入商城账号，也不会让你输入密码。"
-        State.DEVICE_OFFLINE_EXAMPLE ->
-            "设备未联网时，应先检查系统网络。这只是手动选择的示例，并非设备检测结果。"
-        State.NETWORK_EXAMPLE ->
-            "连接中断时应保留返回路径。本页没有发送请求，也未真实检测网络。"
-        State.STORE_UNAVAILABLE_EXAMPLE ->
-            "商城服务不可用时应清晰告知。本页并未检查远端服务的运行状态。"
-    }
-
-    private fun statusPanel() = card().apply {
-        line(this, if (state == State.NOT_CONFIGURED) "当前接入状态" else "异常状态演示",
-            14f, accent, true, 0)
-        line(this, stateTitle(), ui.headingCompactSp, ink, true, 13)
-        line(this, stateExplanation(), 16f, muted, top = 12)
-
-        if (state != State.NOT_CONFIGURED) {
-            line(this, "模拟界面 · 非实时检测 · 未执行任何交易", 14f, accent,
-                true, 13)
-            addButton(this, "恢复实际状态：尚未接入", top = 17) {
-                choose(State.NOT_CONFIGURED)
-            }
-        } else {
-            line(this, "接入状态：无目标 · 无登录 · 无交易", 14f, muted, top = 15)
+    protected fun shell(title: String, primary: LinearLayout, secondary: LinearLayout, back: () -> Unit = { finish() }) {
+        val root = column().apply { setBackgroundColor(ui.background) }
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(8))
         }
-        addButton(this, "返回桌面", primary = true, top = 18) { leave() }
-
-        line(this, "查看异常状态示例", 18f, ink, true, 20)
-        line(this, "选择后仅切换界面，不代表真实检测或登录。", 14f, muted, top = 7)
-
-        val options = listOf(
-            "未登录示例" to State.LOGIN_EXAMPLE,
-            "设备离线示例" to State.DEVICE_OFFLINE_EXAMPLE,
-            "断网示例" to State.NETWORK_EXAMPLE,
-            "商城不可用示例" to State.STORE_UNAVAILABLE_EXAMPLE
-        )
-        options.chunked(2).forEach { pair ->
-            val row = LinearLayout(this@StorefrontActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
-            pair.forEachIndexed { i, item ->
-                row.addView(button(item.first) { choose(item.second) },
-                    LinearLayout.LayoutParams(0, dp(ui.minActionHeightDp), 1f).apply {
-                        if (i > 0) leftMargin = dp(9)
-                    })
-            }
-            addView(row, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(9)
-            })
+        bar.addView(text("‹", 35f, ui.terracotta, true).apply {
+            gravity = Gravity.CENTER; contentDescription = "返回"; isClickable = true; isFocusable = true
+            background = ui.touch(this@ServicePreviewActivity, ui.surface, 14, ui.divider)
+            setOnClickListener { back() }
+        }, LinearLayout.LayoutParams(dp(56), dp(56)))
+        bar.addView(text(title, 24f, ui.ink, true), LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(13) })
+        bar.addView(text("原型演示", 13f, ui.muted))
+        root.addView(bar)
+        val content = column().apply {
+            orientation = if (wide()) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(24))
         }
-    }
-
-    private fun draw() {
-        val wideScreen = wide()
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(ui.background)
-        }
-        root.addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
-        }
-        val columns = LinearLayout(this).apply {
-            orientation = if (wideScreen) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-            setPadding(dp(if (wideScreen) 18 else 15), dp(4),
-                dp(if (wideScreen) 18 else 15), dp(20))
-        }
-        if (wideScreen) {
-            columns.addView(introduction(), LinearLayout.LayoutParams(0, -2, .82f).apply {
-                rightMargin = dp(14)
-            })
-            columns.addView(statusPanel(), LinearLayout.LayoutParams(0, -2, 1.18f))
-        } else {
-            columns.addView(introduction(), LinearLayout.LayoutParams(-1, -2))
-            columns.addView(statusPanel(), LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(14)
-            })
-        }
-        scroll.addView(columns)
+        if (wide()) {
+            content.addView(primary, LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = dp(16) })
+            content.addView(secondary, LinearLayout.LayoutParams(0, -2, 1.2f))
+        } else { add(content, primary, 0); add(content, secondary, 14) }
+        val scroll = ScrollView(this).apply { isFillViewport = true; addView(content) }
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(text(
-            "原型展示 · 无商城连接、真实商品、订单或支付能力",
-            12f, muted
-        ).apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(10), 0, dp(10), 0)
-        }, LinearLayout.LayoutParams(-1, dp(36)))
         setContentView(root)
+    }
+    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); render() }
+    override fun onConfigurationChanged(newConfig: Configuration) { super.onConfigurationChanged(newConfig); render() }
+    protected abstract fun render()
+}
+
+/** Local Life supplies the planned benefit; no store integration or entitlement exists here. */
+internal class StorefrontActivity : ServicePreviewActivity() {
+    private var selected = 0
+    private val categories = listOf("优惠购", "本地好物", "社区福利")
+    private val descriptions = listOf("专享折扣 · 优惠商品", "家门口的精选好物", "邻里活动与生活福利")
+    override fun onStop() { super.onStop(); selected = 0 }
+    override fun onResume() { super.onResume(); render() }
+    override fun render() {
+        val hero = panel(ui.storeIcon, null).apply {
+            line(this, "惠享 · 本地优惠", 18f, ui.terracotta, true, 0)
+            line(this, "9.9 折", 54f, ui.terracotta, true, 12)
+            line(this, "本地生活专享优惠", 22f, ui.ink, true, 5)
+            line(this, "示例权益 · 实际折扣待定", 13f, ui.muted, top = 10)
+            val example = panel(ui.surface, null).apply {
+                line(this, "优惠购 · 价格示例", 14f, ui.muted, true, 0)
+                line(this, "¥100.00  →  ¥99.00", 25f, ui.terracotta, true, 8)
+                line(this, "本次示例优惠 ¥1.00", 14f, ui.muted, top = 6)
+            }
+            add(this, example, 20)
+        }
+        val body = column().apply {
+            line(this, "家门口的好生活", 24f, ui.ink, true, 0)
+            line(this, "由三创本地生活提供", 14f, ui.muted, top = 6)
+            categories.forEachIndexed { i, title ->
+                action(this, title, descriptions[i], R.drawable.ic_home_shopping_bag_open,
+                    if (i == selected) ui.storeIcon else ui.albumIcon,
+                    if (i == selected) ui.terracotta else ui.ink) {
+                    selected = i
+                    render()
+                }
+            }
+            val detail = panel(ui.surface).apply {
+                line(this, categories[selected], 19f, ui.terracotta, true, 0)
+                line(this, listOf("订阅专享优惠商品，示例为 9.9 折。", "精选社区商品与便民服务。", "附近社区活动与生活福利。")[selected], 16f, top = 9)
+                line(this, "权益展示原型 · 暂不可购买", 13f, ui.muted, top = 9)
+            }
+            add(this, detail, 14)
+        }
+        shell("本地生活", hero, body)
     }
 }
