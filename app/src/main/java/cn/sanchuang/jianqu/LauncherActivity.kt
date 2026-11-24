@@ -82,9 +82,9 @@ class LauncherActivity : Activity() {
         QuickAction("家人通话", R.drawable.ic_home_video_camera, LauncherUiTokens.familyCallIcon, QuickActionDestination.FAMILY_CALL),
         QuickAction("家庭相册", R.drawable.ic_home_images, LauncherUiTokens.albumIcon, QuickActionDestination.CONTENT_ALBUM),
         QuickAction("影视节目", R.drawable.ic_home_film_strip, LauncherUiTokens.videoIcon, QuickActionDestination.CONTENT_VIDEO),
-        QuickAction("精选商城", R.drawable.ic_home_shopping_bag_open, LauncherUiTokens.storeIcon, QuickActionDestination.STOREFRONT),
+        QuickAction("本地生活", R.drawable.ic_home_shopping_bag_open, LauncherUiTokens.storeIcon, QuickActionDestination.STOREFRONT),
         QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, LauncherUiTokens.musicIcon, QuickActionDestination.CONTENT_MUSIC),
-        QuickAction("健康讲座", R.drawable.ic_home_stethoscope, LauncherUiTokens.healthIcon, QuickActionDestination.CONTENT_HEALTH),
+        QuickAction("健康中心", R.drawable.ic_home_stethoscope, LauncherUiTokens.healthIcon, QuickActionDestination.CONTENT_HEALTH),
         QuickAction("建政栏目", R.drawable.ic_home_newspaper, LauncherUiTokens.newsIcon, QuickActionDestination.CONTENT_NEWS),
         QuickAction("我的服务", R.drawable.ic_home_hand_heart, Color.rgb(248, 231, 227), QuickActionDestination.SERVICES),
         QuickAction("设置", R.drawable.ic_home_gear, Color.rgb(235, 235, 235), QuickActionDestination.SETTINGS),
@@ -391,7 +391,7 @@ class LauncherActivity : Activity() {
             QuickActionDestination.CONTENT_ALBUM -> openContent(ContentGalleryActivity.ALBUM)
             QuickActionDestination.CONTENT_VIDEO -> openContent(ContentGalleryActivity.VIDEO)
             QuickActionDestination.CONTENT_MUSIC -> openContent(ContentGalleryActivity.MUSIC)
-            QuickActionDestination.CONTENT_HEALTH -> openContent(ContentGalleryActivity.HEALTH)
+            QuickActionDestination.CONTENT_HEALTH -> startActivity(Intent(this, HealthCenterActivity::class.java))
             QuickActionDestination.CONTENT_NEWS -> openContent(ContentGalleryActivity.NEWS)
             QuickActionDestination.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
             QuickActionDestination.SETTINGS -> showSettings()
