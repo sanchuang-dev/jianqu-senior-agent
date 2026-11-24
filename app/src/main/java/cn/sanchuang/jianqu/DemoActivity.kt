@@ -51,10 +51,11 @@ class DemoActivity : Activity() {
     private val rentalTermMs = rentalTermDays * 24 * 60 * 60 * 1000
     private val rentalDevice = "JQ-DEMO-01" // Single local demo machine; no external device enrollment.
     private val serviceOptions = listOf(
-        ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与记忆待接入", LauncherUiTokens.companionStart, R.drawable.ic_home_hand_heart),
-        ServiceOption("wellness", "元气", "健康生活", "跟练与健康课程", "课程内容待接入", LauncherUiTokens.healthIcon, R.drawable.ic_home_stethoscope),
-        ServiceOption("cinema", "光影", "影视娱乐", "影视、戏曲与音乐", "授权片源待接入", LauncherUiTokens.videoIcon, R.drawable.ic_home_film_strip),
-        ServiceOption("family", "牵挂", "家人关怀", "家人通话与相册", "真实通话尚未接通", LauncherUiTokens.albumIcon, R.drawable.ic_home_video_camera)
+        ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与个性记忆", LauncherUiTokens.companionStart, R.drawable.ic_home_hand_heart),
+        ServiceOption("wellness", "元气", "健康关怀", "康复训练、健康打卡", "健康计划与课程", LauncherUiTokens.healthIcon, R.drawable.ic_home_stethoscope),
+        ServiceOption("cinema", "光影", "影视娱乐", "影视、戏曲与音乐", "精选视听内容", LauncherUiTokens.videoIcon, R.drawable.ic_home_film_strip),
+        ServiceOption("family", "牵挂", "家人关怀", "家人通话与相册", "亲情互动", LauncherUiTokens.albumIcon, R.drawable.ic_home_video_camera),
+        ServiceOption("local", "惠享", "本地优惠", "本地生活优惠购", "9.9 折 · 示例权益", LauncherUiTokens.storeIcon, R.drawable.ic_home_shopping_bag_open)
     )
     // A draft selection is never an entitlement until the demo payment is confirmed.
     private val pendingServiceIds = linkedSetOf<String>()
@@ -304,7 +305,7 @@ class DemoActivity : Activity() {
                 val selected = service.id in pendingServiceIds
                 val tile = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
-                    minimumHeight = dp(132)
+                    minimumHeight = dp(116)
                     setPadding(dp(13), dp(12), dp(13), dp(12))
                     background = LauncherUiTokens.touch(
                         this@DemoActivity,
@@ -341,7 +342,7 @@ class DemoActivity : Activity() {
                 line(tile, service.shortName, 15f, ink, true, top = 8)
                 line(tile, service.description, 14f, ink, top = 7)
                 line(tile, service.note, 12f, muted, top = 5)
-                row.addView(tile, LinearLayout.LayoutParams(0, -2, 1f).apply {
+                row.addView(tile, LinearLayout.LayoutParams(0, -2, if (options.size == 1) 2f else 1f).apply {
                     if (index > 0) leftMargin = dp(9)
                 })
             }
