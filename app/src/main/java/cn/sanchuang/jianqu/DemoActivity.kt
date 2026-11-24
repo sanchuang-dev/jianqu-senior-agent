@@ -28,19 +28,37 @@ import android.widget.Toast
 
 /**
  * JQ-003 local mock: never communicates with payment, AI, account or device-ID services.
- * Only a local rental expiry is stored for this device; conversations stay in memory.
+ * Only local rental expiry and demo service selections are stored; conversations stay in memory.
  */
 class DemoActivity : Activity() {
     companion object {
         const val EXTRA_OPEN_CHAT = "cn.sanchuang.jianqu.extra.OPEN_CHAT"
     }
     private enum class Page { HOME, PAY, CHAT }
+    private data class ServiceOption(
+        val id: String,
+        val name: String,
+        val shortName: String,
+        val description: String,
+        val note: String,
+        val backgroundColor: Int,
+        val iconRes: Int
+    )
     private data class Line(val prompt: String, val reply: String)
     private data class Style(val title: String, val label: String, val tone: String, val welcome: String, val lines: List<Line>)
 
     private val rentalTermDays = 30L // Prototype-only period, not a commercial offer.
     private val rentalTermMs = rentalTermDays * 24 * 60 * 60 * 1000
     private val rentalDevice = "JQ-DEMO-01" // Single local demo machine; no external device enrollment.
+    private val serviceOptions = listOf(
+        ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与记忆待接入", LauncherUiTokens.companionStart, R.drawable.ic_home_hand_heart),
+        ServiceOption("wellness", "元气", "健康生活", "跟练与健康课程", "课程内容待接入", LauncherUiTokens.healthIcon, R.drawable.ic_home_stethoscope),
+        ServiceOption("cinema", "光影", "影视娱乐", "影视、戏曲与音乐", "授权片源待接入", LauncherUiTokens.videoIcon, R.drawable.ic_home_film_strip),
+        ServiceOption("family", "牵挂", "家人关怀", "家人通话与相册", "真实通话尚未接通", LauncherUiTokens.albumIcon, R.drawable.ic_home_video_camera)
+    )
+    // A draft selection is never an entitlement until the demo payment is confirmed.
+    private val pendingServiceIds = linkedSetOf<String>()
+
     // Same four prompts across characters make the persona differences observable,
     // rather than changing both the question and the answer when a style is selected.
     private val styles = listOf(
@@ -79,6 +97,8 @@ class DemoActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         chatRequested = intent?.getBooleanExtra(EXTRA_OPEN_CHAT, false) == true
+        pendingServiceIds.clear()
+        pendingServiceIds.addAll(storedServiceIds())
         // JQ-007: the free local script demo is not gated by fictional device subscriptions.
         page = if (chatRequested) Page.CHAT else Page.HOME
         draw()
@@ -268,10 +288,79 @@ class DemoActivity : Activity() {
     private fun rentalDate(millis: Long): String =
         SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(millis))
 
+    private fun storedServiceIds(): Set<String> {
+        val saved = prefs.getStringSet("rental_service_ids", emptySet())?.toSet().orEmpty()
+        return serviceOptions.map { it.id }.filterTo(linkedSetOf()) { it in saved }
+    }
+
+    private fun serviceNames(ids: Set<String>): String =
+        serviceOptions.filter { it.id in ids }.joinToString("、") { it.shortName }
+
+    private fun renderServiceChoices(grid: LinearLayout, summary: TextView) {
+        grid.removeAllViews()
+        serviceOptions.chunked(2).forEachIndexed { rowIndex, options ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            options.forEachIndexed { index, service ->
+                val selected = service.id in pendingServiceIds
+                val tile = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    minimumHeight = dp(132)
+                    setPadding(dp(13), dp(12), dp(13), dp(12))
+                    background = LauncherUiTokens.touch(
+                        this@DemoActivity,
+                        service.backgroundColor,
+                        14,
+                        if (selected) accent else LauncherUiTokens.divider
+                    )
+                    isClickable = true
+                    isFocusable = true
+                    contentDescription = "${service.name}·${service.shortName}，${if (selected) "已选" else "未选"}，点击切换"
+                    setOnClickListener {
+                        if (selected) pendingServiceIds.remove(service.id)
+                        else pendingServiceIds.add(service.id)
+                        renderServiceChoices(grid, summary)
+                    }
+                }
+                val titleRow = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+                titleRow.addView(label(service.name, 20f, ink, true),
+                    LinearLayout.LayoutParams(0, -2, 1f))
+                titleRow.addView(label(if (selected) "✓ 已选" else "＋ 添加", 13f,
+                    if (selected) accent else muted, selected))
+                tile.addView(titleRow)
+                val pictogram = ImageView(this).apply {
+                    setImageResource(service.iconRes)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }
+                tile.addView(pictogram, LinearLayout.LayoutParams(dp(33), dp(33)).apply {
+                    topMargin = dp(10)
+                })
+                line(tile, service.shortName, 15f, ink, true, top = 8)
+                line(tile, service.description, 14f, ink, top = 7)
+                line(tile, service.note, 12f, muted, top = 5)
+                row.addView(tile, LinearLayout.LayoutParams(0, -2, 1f).apply {
+                    if (index > 0) leftMargin = dp(9)
+                })
+            }
+            grid.addView(row, LinearLayout.LayoutParams(-1, -2).apply {
+                if (rowIndex > 0) topMargin = dp(9)
+            })
+        }
+        summary.text = if (pendingServiceIds.isEmpty()) {
+            "本次仅租赁设备"
+        } else {
+            "已选择 ${pendingServiceIds.size} 项：${serviceNames(pendingServiceIds)}"
+        }
+    }
+
     private fun showRental(body: LinearLayout) {
         val landscape = wide()
         val expiry = rentalExpiry()
         val active = expiry > System.currentTimeMillis()
+        val committedServices = if (active) storedServiceIds() else emptySet()
         body.orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
 
         val overview = LinearLayout(this).apply {
@@ -289,24 +378,45 @@ class DemoActivity : Activity() {
             expiry > 0L -> "租赁已到期"
             else -> "尚未租赁"
         }
-        line(overview, state, 32f, if (active) accent else ink, true, 28)
-        line(
-            overview,
+        line(overview, state, 32f, if (active) accent else ink, true, 25)
+        line(overview,
             if (expiry > 0L) "租期至 ${rentalDate(expiry)}" else "租用这台设备，按期续租",
-            17f, muted, top = 10
+            17f, muted, top = 9
         )
+        if (active) {
+            line(overview, "本期服务组合", 16f, ink, true, top = 22)
+            line(overview,
+                if (committedServices.isEmpty()) "仅设备租赁" else serviceNames(committedServices),
+                16f, accent, top = 7
+            )
+            line(overview, "服务权益仅作原型演示", 13f, muted, top = 6)
+        }
 
         val action = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(21), dp(24), dp(24))
+            setPadding(dp(18), dp(17), dp(18), dp(18))
             background = paper(outlined = true)
         }
-        line(action, "闺蜜机月租", 24f, ink, true, 0)
-        line(action, "每期 30 天", 16f, muted, top = 10)
+        line(action, "选择你的服务", 23f, ink, true, 0)
+        line(action, "机器租赁为基础，服务可自由组合", 15f, muted, top = 7)
+
+        val grid = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        action.addView(grid, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(14)
+        })
+        val summary = label("", 15f, ink, true)
+        action.addView(summary, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(13)
+        })
+        renderServiceChoices(grid, summary)
+        line(action, "服务价格待定 · 当前仅演示组合选择", 13f, muted, top = 6)
         button(action, if (active) "扫码续租" else "扫码开通", true) {
             navigate(Page.PAY)
         }
-        line(action, "演示付款，不会实际扣费", 14f, muted, top = 15)
+        line(action, "付款演示不会实际扣费", 13f, muted, top = 8)
+
         val resetLink = label("重置演示", 14f, muted).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isClickable = true
@@ -314,26 +424,30 @@ class DemoActivity : Activity() {
             setOnClickListener {
                 AlertDialog.Builder(this@DemoActivity)
                     .setTitle("重置本机租赁？")
-                    .setMessage("仅清除当前设备的本地演示租期。")
+                    .setMessage("将清除本机的演示租期及已选服务。")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("重置") { _, _ ->
-                        prefs.edit().remove("rental_expiry_ms").apply()
+                        prefs.edit()
+                            .remove("rental_expiry_ms")
+                            .remove("rental_service_ids")
+                            .apply()
+                        pendingServiceIds.clear()
                         draw()
                     }.show()
             }
         }
         action.addView(resetLink, LinearLayout.LayoutParams(-1, dp(44)).apply {
-            topMargin = dp(8)
+            topMargin = dp(5)
         })
         if (landscape) {
-            body.addView(overview, LinearLayout.LayoutParams(0, -2, 1.1f).apply {
-                rightMargin = dp(16)
+            body.addView(overview, LinearLayout.LayoutParams(0, -2, 0.85f).apply {
+                rightMargin = dp(15)
             })
-            body.addView(action, LinearLayout.LayoutParams(0, -2, 1f))
+            body.addView(action, LinearLayout.LayoutParams(0, -2, 1.25f))
         } else {
             body.addView(overview, LinearLayout.LayoutParams(-1, -2))
             body.addView(action, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(16)
+                topMargin = dp(15)
             })
         }
     }
@@ -346,13 +460,20 @@ class DemoActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(21), dp(24), dp(22))
         }
-        line(order, "闺蜜机租赁", 24f, ink, true, 0)
-        line(order, "¥99", 44f, accent, true, 22)
-        line(order, "演示金额 · 30 天", 16f, muted, top = 4)
-        line(order, "租赁设备  $rentalDevice", 16f, ink, top = 25)
+        line(order, "本机租赁 · 订单演示", 23f, ink, true, 0)
+        line(order, "¥99", 44f, accent, true, 18)
+        line(order, "设备租金演示价 · 30 天", 15f, muted, top = 3)
+        line(order, "租赁设备  $rentalDevice", 16f, ink, top = 23)
         if (rentalExpiry() > System.currentTimeMillis()) {
-            line(order, "当前租期至 ${rentalDate(rentalExpiry())}", 15f, muted, top = 10)
+            line(order, "现有租期至 ${rentalDate(rentalExpiry())}", 15f, muted, top = 10)
         }
+        line(order, "本次服务组合", 17f, ink, true, top = 22)
+        line(order,
+            if (pendingServiceIds.isEmpty()) "仅设备租赁"
+            else serviceNames(pendingServiceIds),
+            19f, accent, true, top = 7
+        )
+        line(order, "服务套餐价格尚未制定，不计入示例金额", 14f, muted, top = 10)
 
         val payment = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -385,11 +506,14 @@ class DemoActivity : Activity() {
     }
 
     private fun completeDemoPayment() {
-        // An explicit simulation action is the only path that changes this device's rental state.
-        // No payment SDK, network confirmation, or receipt is fabricated here.
+        // The only path that changes this machine's demo lease and demo service choices.
+        // An unconfirmed draft is never persisted.
         val now = System.currentTimeMillis()
         val nextExpiry = maxOf(now, rentalExpiry()) + rentalTermMs
-        prefs.edit().putLong("rental_expiry_ms", nextExpiry).apply()
+        prefs.edit()
+            .putLong("rental_expiry_ms", nextExpiry)
+            .putStringSet("rental_service_ids", pendingServiceIds.toSet())
+            .apply()
         page = Page.HOME
         draw()
     }
