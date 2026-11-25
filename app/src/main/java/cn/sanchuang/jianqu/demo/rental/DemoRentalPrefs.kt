@@ -1,5 +1,6 @@
 package cn.sanchuang.jianqu.demo.rental
 
+import android.content.Context
 import android.content.SharedPreferences
 
 /**
@@ -8,13 +9,21 @@ import android.content.SharedPreferences
  * Keep the existing preference file and keys until the prototype is intentionally retired;
  * real rental/payment state must later come from a trusted service boundary instead.
  */
-internal class DemoRentalPrefs(
+internal class DemoRentalPrefs private constructor(
     private val preferences: SharedPreferences
 ) {
     companion object {
-        const val PREFERENCES_NAME = "jianqu_local_demo"
+        private const val PREFERENCES_NAME = "jianqu_local_demo"
         private const val KEY_EXPIRY_MS = "rental_expiry_ms"
         private const val KEY_SERVICE_IDS = "rental_service_ids"
+
+        fun open(context: Context): DemoRentalPrefs =
+            DemoRentalPrefs(
+                context.applicationContext.getSharedPreferences(
+                    PREFERENCES_NAME,
+                    Context.MODE_PRIVATE
+                )
+            )
     }
 
     fun load(allowedServiceIds: Iterable<String>): DemoRentalState {
