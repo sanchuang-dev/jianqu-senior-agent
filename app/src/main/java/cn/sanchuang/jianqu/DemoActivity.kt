@@ -82,9 +82,7 @@ class DemoActivity : Activity() {
         ))
     )
 
-    private val rentalPrefs by lazy {
-        DemoRentalPrefs(getSharedPreferences(DemoRentalPrefs.PREFERENCES_NAME, MODE_PRIVATE))
-    }
+    private val rentalPrefs by lazy { DemoRentalPrefs.open(this) }
     private var page = Page.HOME
     private var styleIndex = 0
     private val conversation = mutableListOf<Line>()
