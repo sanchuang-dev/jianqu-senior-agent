@@ -25,6 +25,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import cn.sanchuang.jianqu.demo.rental.DemoRentalPolicy
+import cn.sanchuang.jianqu.demo.rental.DemoRentalPrefs
 
 /**
  * JQ-003 local mock: never communicates with payment, AI, account or device-ID services.
@@ -47,9 +49,6 @@ class DemoActivity : Activity() {
     private data class Line(val prompt: String, val reply: String)
     private data class Style(val title: String, val label: String, val tone: String, val welcome: String, val lines: List<Line>)
 
-    private val rentalTermDays = 30L // Prototype-only period, not a commercial offer.
-    private val rentalTermMs = rentalTermDays * 24 * 60 * 60 * 1000
-    private val rentalDevice = "JQ-DEMO-01" // Single local demo machine; no external device enrollment.
     private val serviceOptions = listOf(
         ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与个性记忆", LauncherUiTokens.companionStart, R.drawable.ic_home_hand_heart),
         ServiceOption("wellness", "元气", "健康关怀", "康复训练、健康打卡", "健康计划与课程", LauncherUiTokens.healthIcon, R.drawable.ic_home_stethoscope),
@@ -83,7 +82,9 @@ class DemoActivity : Activity() {
         ))
     )
 
-    private val prefs by lazy { getSharedPreferences("jianqu_local_demo", MODE_PRIVATE) }
+    private val rentalPrefs by lazy {
+        DemoRentalPrefs(getSharedPreferences(DemoRentalPrefs.PREFERENCES_NAME, MODE_PRIVATE))
+    }
     private var page = Page.HOME
     private var styleIndex = 0
     private val conversation = mutableListOf<Line>()
@@ -284,15 +285,16 @@ class DemoActivity : Activity() {
         if (page == Page.HOME) showRental(body) else showPayment(body)
     }
 
-    private fun rentalExpiry(): Long = prefs.getLong("rental_expiry_ms", 0L)
+    private fun allowedServiceIds(): List<String> = serviceOptions.map { it.id }
+
+    private fun rentalState() = rentalPrefs.load(allowedServiceIds())
+
+    private fun rentalExpiry(): Long = rentalState().expiryMs
 
     private fun rentalDate(millis: Long): String =
         SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(millis))
 
-    private fun storedServiceIds(): Set<String> {
-        val saved = prefs.getStringSet("rental_service_ids", emptySet())?.toSet().orEmpty()
-        return serviceOptions.map { it.id }.filterTo(linkedSetOf()) { it in saved }
-    }
+    private fun storedServiceIds(): Set<String> = rentalState().serviceIds
 
     private fun serviceNames(ids: Set<String>): String =
         serviceOptions.filter { it.id in ids }.joinToString("、") { it.shortName }
@@ -373,7 +375,7 @@ class DemoActivity : Activity() {
             ).apply { cornerRadius = dp(18).toFloat() }
         }
         line(overview, "见趣 · 闺蜜机", 21f, ink, true, 0)
-        line(overview, "本机编号  $rentalDevice", 15f, muted, top = 10)
+        line(overview, "本机编号  ${DemoRentalPolicy.DEVICE_ID}", 15f, muted, top = 10)
         val state = when {
             active -> "租赁有效"
             expiry > 0L -> "租赁已到期"
@@ -428,10 +430,7 @@ class DemoActivity : Activity() {
                     .setMessage("将清除本机的演示租期及已选服务。")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("重置") { _, _ ->
-                        prefs.edit()
-                            .remove("rental_expiry_ms")
-                            .remove("rental_service_ids")
-                            .apply()
+                        rentalPrefs.clear()
                         pendingServiceIds.clear()
                         draw()
                     }.show()
@@ -464,7 +463,7 @@ class DemoActivity : Activity() {
         line(order, "本机租赁 · 订单演示", 23f, ink, true, 0)
         line(order, "¥99", 44f, accent, true, 18)
         line(order, "设备租金演示价 · 30 天", 15f, muted, top = 3)
-        line(order, "租赁设备  $rentalDevice", 16f, ink, top = 23)
+        line(order, "租赁设备  ${DemoRentalPolicy.DEVICE_ID}", 16f, ink, top = 23)
         if (rentalExpiry() > System.currentTimeMillis()) {
             line(order, "现有租期至 ${rentalDate(rentalExpiry())}", 15f, muted, top = 10)
         }
@@ -509,12 +508,13 @@ class DemoActivity : Activity() {
     private fun completeDemoPayment() {
         // The only path that changes this machine's demo lease and demo service choices.
         // An unconfirmed draft is never persisted.
-        val now = System.currentTimeMillis()
-        val nextExpiry = maxOf(now, rentalExpiry()) + rentalTermMs
-        prefs.edit()
-            .putLong("rental_expiry_ms", nextExpiry)
-            .putStringSet("rental_service_ids", pendingServiceIds.toSet())
-            .apply()
+        val renewed = DemoRentalPolicy.renew(
+            current = rentalState(),
+            nowMs = System.currentTimeMillis(),
+            selectedServiceIds = pendingServiceIds,
+            allowedServiceIds = allowedServiceIds()
+        )
+        rentalPrefs.save(renewed)
         page = Page.HOME
         draw()
     }
