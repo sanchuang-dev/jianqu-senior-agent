@@ -1,4 +1,4 @@
-name: Android prototype APK (debug)
+name: Android quality gate (debug)
 
 on:
   pull_request:
