@@ -289,8 +289,6 @@ class DemoActivity : Activity() {
 
     private fun rentalState() = rentalPrefs.load(allowedServiceIds())
 
-    private fun rentalExpiry(): Long = rentalState().expiryMs
-
     private fun rentalDate(millis: Long): String =
         SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(millis))
 
