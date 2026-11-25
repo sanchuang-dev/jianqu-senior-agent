@@ -13,7 +13,7 @@ class LauncherAppSearchTest {
 
     @Test
     fun labelMatchIsCaseInsensitive() {
-        assertTrue(LauncherAppSearch.matches("phoTOS", "Google Photos", "com.google.android.apps.photos"))
+        assertTrue(LauncherAppSearch.matches("  alBUM  ", "Family Album", "com.example.viewer"))
     }
 
     @Test
