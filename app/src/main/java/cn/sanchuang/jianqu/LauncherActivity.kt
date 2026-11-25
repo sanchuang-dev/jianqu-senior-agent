@@ -671,7 +671,7 @@ class LauncherActivity : Activity() {
     private fun renderApps(entries: List<LauncherActivityInfo>) {
         if (page != Page.ALL_APPS || !::catalog.isInitialized || !::searchInput.isInitialized) return
         val query = searchInput.text.toString().trim()
-        val visibleApps = entries.filter {
+        val visibleApps = if (query.isEmpty()) entries else entries.filter {
             LauncherAppSearch.matches(
                 query = query,
                 label = it.label.toString(),
