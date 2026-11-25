@@ -100,7 +100,7 @@ class DemoActivity : Activity() {
         super.onCreate(savedInstanceState)
         chatRequested = intent?.getBooleanExtra(EXTRA_OPEN_CHAT, false) == true
         pendingServiceIds.clear()
-        pendingServiceIds.addAll(storedServiceIds())
+        pendingServiceIds.addAll(rentalState().serviceIds)
         // JQ-007: the free local script demo is not gated by fictional device subscriptions.
         page = if (chatRequested) Page.CHAT else Page.HOME
         draw()
@@ -294,8 +294,6 @@ class DemoActivity : Activity() {
     private fun rentalDate(millis: Long): String =
         SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(millis))
 
-    private fun storedServiceIds(): Set<String> = rentalState().serviceIds
-
     private fun serviceNames(ids: Set<String>): String =
         serviceOptions.filter { it.id in ids }.joinToString("、") { it.shortName }
 
@@ -361,9 +359,10 @@ class DemoActivity : Activity() {
 
     private fun showRental(body: LinearLayout) {
         val landscape = wide()
-        val expiry = rentalExpiry()
-        val active = expiry > System.currentTimeMillis()
-        val committedServices = if (active) storedServiceIds() else emptySet()
+        val currentRental = rentalState()
+        val expiry = currentRental.expiryMs
+        val active = currentRental.isActive(System.currentTimeMillis())
+        val committedServices = if (active) currentRental.serviceIds else emptySet()
         body.orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
 
         val overview = LinearLayout(this).apply {
@@ -464,8 +463,9 @@ class DemoActivity : Activity() {
         line(order, "¥99", 44f, accent, true, 18)
         line(order, "设备租金演示价 · 30 天", 15f, muted, top = 3)
         line(order, "租赁设备  ${DemoRentalPolicy.DEVICE_ID}", 16f, ink, top = 23)
-        if (rentalExpiry() > System.currentTimeMillis()) {
-            line(order, "现有租期至 ${rentalDate(rentalExpiry())}", 15f, muted, top = 10)
+        val currentRental = rentalState()
+        if (currentRental.isActive(System.currentTimeMillis())) {
+            line(order, "现有租期至 ${rentalDate(currentRental.expiryMs)}", 15f, muted, top = 10)
         }
         line(order, "本次服务组合", 17f, ink, true, top = 22)
         line(order,
