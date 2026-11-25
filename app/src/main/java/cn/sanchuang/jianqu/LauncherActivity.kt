@@ -2,12 +2,10 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ComponentName
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.content.pm.LauncherActivityInfo
-import android.content.pm.LauncherApps
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -15,8 +13,6 @@ import android.graphics.drawable.RippleDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.Process
-import android.os.UserHandle
 import android.provider.Settings
 import android.text.Editable
 import android.text.InputFilter
@@ -36,8 +32,8 @@ import android.widget.ScrollView
 import android.widget.TextClock
 import android.widget.TextView
 import android.widget.Toast
-import java.text.Collator
-import java.util.Locale
+import cn.sanchuang.jianqu.system.apps.LauncherAppCatalog
+import cn.sanchuang.jianqu.system.apps.LauncherAppSearch
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 
@@ -66,7 +62,7 @@ class LauncherActivity : Activity() {
     private val divider = LauncherUiTokens.divider
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor()
-    private lateinit var apps: LauncherApps
+    private lateinit var appCatalogAdapter: LauncherAppCatalog
     private lateinit var catalog: GridLayout
     private lateinit var appCount: TextView
     private lateinit var searchInput: EditText
@@ -91,18 +87,10 @@ class LauncherActivity : Activity() {
         QuickAction("全部应用", R.drawable.ic_home_squares_four, Color.rgb(230, 227, 245), QuickActionDestination.ALL_APPS)
     )
 
-    private val packageCallback = object : LauncherApps.Callback() {
-        override fun onPackageAdded(packageName: String, user: UserHandle) = refreshApps()
-        override fun onPackageRemoved(packageName: String, user: UserHandle) = refreshApps()
-        override fun onPackageChanged(packageName: String, user: UserHandle) = refreshApps()
-        override fun onPackagesAvailable(names: Array<out String>, user: UserHandle, replacing: Boolean) = refreshApps()
-        override fun onPackagesUnavailable(names: Array<out String>, user: UserHandle, replacing: Boolean) = refreshApps()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        apps = getSystemService(LauncherApps::class.java)
-        apps.registerCallback(packageCallback, main)
+        appCatalogAdapter = LauncherAppCatalog.open(this, main) { refreshApps() }
+        appCatalogAdapter.start()
         showHome()
         if (savedInstanceState == null && !uiPreferences.getBoolean("intro_seen", false)) {
             main.post {
@@ -151,7 +139,7 @@ class LauncherActivity : Activity() {
     }
 
     override fun onDestroy() {
-        apps.unregisterCallback(packageCallback)
+        appCatalogAdapter.stop()
         searchUpdate?.let(main::removeCallbacks)
         worker.shutdownNow()
         super.onDestroy()
@@ -658,8 +646,7 @@ class LauncherActivity : Activity() {
         try {
             worker.execute {
                 val result = runCatching {
-                    apps.getActivityList(null, Process.myUserHandle())
-                        .sortedWith(compareBy(Collator.getInstance(Locale.CHINA)) { it.label.toString() })
+                    appCatalogAdapter.load()
                 }
                 main.post {
                     if (page == Page.ALL_APPS && request == appLoadVersion &&
@@ -684,9 +671,12 @@ class LauncherActivity : Activity() {
     private fun renderApps(entries: List<LauncherActivityInfo>) {
         if (page != Page.ALL_APPS || !::catalog.isInitialized || !::searchInput.isInitialized) return
         val query = searchInput.text.toString().trim()
-        val visibleApps = if (query.isEmpty()) entries else entries.filter {
-            it.label.toString().contains(query, ignoreCase = true) ||
-                it.componentName.packageName.contains(query, ignoreCase = true)
+        val visibleApps = entries.filter {
+            LauncherAppSearch.matches(
+                query = query,
+                label = it.label.toString(),
+                packageName = it.componentName.packageName
+            )
         }
         catalog.removeAllViews()
         appCount.text = if (query.isEmpty()) getString(R.string.app_count, visibleApps.size)
@@ -708,7 +698,7 @@ class LauncherActivity : Activity() {
                 contentDescription = "打开 " + entry.label
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { open(entry.componentName, entry.user) }
+                setOnClickListener { open(entry) }
             }
             box.addView(ImageView(this).apply {
                 setImageDrawable(entry.getIcon(0))
@@ -729,10 +719,10 @@ class LauncherActivity : Activity() {
         }
     }
 
-    private fun open(component: ComponentName, user: UserHandle) {
+    private fun open(entry: LauncherActivityInfo) {
         try {
             restoreHomeOnResume = true
-            apps.startMainActivity(component, user, null, null)
+            appCatalogAdapter.launch(entry)
         } catch (e: Exception) {
             restoreHomeOnResume = false
             Log.w("JianquLauncher", "Application disappeared before launch", e)
