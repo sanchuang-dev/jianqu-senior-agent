@@ -292,7 +292,7 @@ class LauncherActivity : Activity() {
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         if (landscape && resources.configuration.screenWidthDp >= 660) {
-            val top = homeRow().apply { gravity = Gravity.CENTER_VERTICAL }
+            val top = homeRow().apply { gravity = Gravity.TOP }
             val companion = homeColumn()
             val environment = homeColumn()
             buildCompanion(companion, glass)
@@ -372,7 +372,7 @@ class LauncherActivity : Activity() {
 
     private fun buildCompanion(body: LinearLayout, glass: HomeGlass) {
         val tile = homeColumn().apply {
-            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setPadding(dp(12), dp(if (landscape && resources.configuration.screenWidthDp >= 660) 0 else 8), dp(12), dp(8))
             gravity = Gravity.CENTER_VERTICAL
             contentDescription = "小暖，进入本地模拟陪伴交互"
             isFocusable = true
