@@ -24,4 +24,4 @@ JianquDimensions 和 JianquTypography 定义公共尺寸/文字层级；Android 
 
 首页固定十入口和 SOS 使用已确认的 3D 图标套装（`jianqu-launcher-icons.zip`），品牌、语音、天气使用先前 `jianqu-home-icons.zip` 的对应 WebP。运行时仅保留实际引用的 WebP，位于 `app/src/main/res/drawable-nodpi/`；不将原图、预览图或未采用的 PNG 打进 APK。完整素材源包与预览归档见 [assets/README.md](assets/README.md)，保留两代原始资源，便于后续视觉更新。小暖人物立绘未提供，不使用替代图。
 
-HOME 与租赁页共用 `FrostedWallpaperBackground`，各自的静态背景及材质颜色由资源定义；不使用逐帧实时模糊。
+玻璃材质统一由 `JianquGlassMaterial`（TILE / PANEL / OVERLAY）和 `colors.xml` 的 `jq_glass_*` 语义 Token 定义。HOME、租赁页、搜索浮层共用 `FrostedWallpaperBackground`：局部静态壁纸采样、模糊缓存、薄白色覆盖、细高光边缘；浮层采用更强的模糊，隔离背后文字和图标，控件使用轻透材质。不同窗口采用屏幕坐标对齐，键盘弹出不改变壁纸采样坐标。不是实时全窗口背景模糊，不引入逐帧滤镜。文字与图标保持实色，危险/主操作语义色不玻璃化。

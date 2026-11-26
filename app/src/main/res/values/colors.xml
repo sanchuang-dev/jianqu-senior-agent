@@ -37,13 +37,16 @@
     <color name="jq_wechat_brand">#07C160</color>
     <!-- Translucent surfaces over the rental welcome wallpaper. -->
     <color name="jq_lease_scrim">#66FFFFFF</color>
-    <!-- Static frosted wallpaper panel; keep footer and payment controls legible. -->
-    <color name="jq_lease_glass_tint">#73FFFFFF</color>
-    <color name="jq_lease_glass_edge">#E6FFFFFF</color>
     <color name="jq_lease_glass_choice">#A6FFFFFF</color>
     <!-- HOME reference design; neutral fallback and translucent surfaces over the dedicated wallpaper. -->
     <color name="jq_home_canvas">#F3E8DE</color>
-    <color name="jq_home_glass">#59FFFFFF</color>
-    <color name="jq_home_glass_edge">#BFFFFFFF</color>
-    <color name="jq_home_search_surface">#F2FFFFFF</color>
+    <!-- Shared glass material tokens. Tint applies over blurred wallpaper, never over text. -->
+    <color name="jq_glass_tile_tint">#59FFFFFF</color>
+    <color name="jq_glass_tile_edge">#BFFFFFFF</color>
+    <color name="jq_glass_panel_tint">#73FFFFFF</color>
+    <color name="jq_glass_panel_edge">#E6FFFFFF</color>
+    <color name="jq_glass_overlay_tint">#66FFFFFF</color>
+    <color name="jq_glass_overlay_edge">#E6FFFFFF</color>
+    <color name="jq_glass_control_tint">#33FFFFFF</color>
+    <color name="jq_glass_separator">#66FFFFFF</color>
 </resources>

@@ -24,12 +24,14 @@ import android.widget.ScrollView
 import android.widget.TextView
 import cn.sanchuang.jianqu.JianquColors
 import cn.sanchuang.jianqu.JianquDrawables
+import cn.sanchuang.jianqu.JianquGlassMaterial
 import cn.sanchuang.jianqu.JianquTypography
 import cn.sanchuang.jianqu.R
 
 /** HOME search is a view of the same real system catalog, not another app source. */
 internal class HomeAppSearchDialog(
     private val activity: Activity,
+    private val wallpaper: View,
     private val onOpen: (LauncherActivityInfo) -> Unit,
     private val onRetry: () -> Unit
 ) : Dialog(activity) {
@@ -52,7 +54,19 @@ internal class HomeAppSearchDialog(
             gravity = Gravity.CENTER
             contentDescription = description
             isFocusable = true
-            background = JianquDrawables.touch(activity, ui.surfaceSecondary, 12)
+            background = JianquDrawables.touch(activity, JianquGlassMaterial.controlTint(activity), 12)
+            setOnClickListener { click() }
+        }
+
+    private fun iconAction(resource: Int, description: String, click: () -> Unit) =
+        FrameLayout(activity).apply {
+            background = JianquDrawables.touch(activity, JianquGlassMaterial.controlTint(activity), 12)
+            isFocusable = true
+            contentDescription = description
+            addView(ImageView(activity).apply {
+                setImageResource(resource)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
             setOnClickListener { click() }
         }
 
@@ -61,16 +75,18 @@ internal class HomeAppSearchDialog(
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         val outer = FrameLayout(activity)
         val panel = column().apply {
-            background = JianquDrawables.shape(activity, activity.getColor(R.color.jq_home_search_surface), 24, ui.border)
             setPadding(dp(16), dp(12), dp(16), dp(12))
             isClickable = true
         }
+        panel.background = JianquGlassMaterial.OVERLAY.background(wallpaper, panel,
+            R.drawable.jq_home_background, JianquGlassMaterial.overlayRadiusDp)
+        panel.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> panel.invalidate() }
         outer.addView(panel, FrameLayout.LayoutParams(-1, -1).apply {
             val margin = dp(if (activity.resources.configuration.screenWidthDp >= 660) 20 else 10)
             setMargins(margin, margin, margin, margin)
         })
         val header = row()
-        header.addView(action("‹", "关闭搜索") { dismiss() }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        header.addView(iconAction(R.drawable.ic_jq_glass_back, "关闭搜索") { dismiss() }, LinearLayout.LayoutParams(dp(48), dp(48)))
         input = EditText(activity).apply {
             setSingleLine(true)
             hint = "搜索已安装应用"
@@ -96,9 +112,9 @@ internal class HomeAppSearchDialog(
             }
         }
         header.addView(input, LinearLayout.LayoutParams(0, dp(52), 1f))
-        header.addView(action("×", "清除搜索") { input.text.clear() }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        header.addView(iconAction(R.drawable.ic_jq_glass_close, "清除搜索") { input.text.clear() }, LinearLayout.LayoutParams(dp(48), dp(48)))
         panel.addView(header, LinearLayout.LayoutParams(-1, -2))
-        panel.addView(View(activity).apply { setBackgroundColor(ui.border) },
+        panel.addView(View(activity).apply { setBackgroundColor(JianquGlassMaterial.separator(activity)) },
             LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(8); bottomMargin = dp(8) })
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
@@ -120,7 +136,7 @@ internal class HomeAppSearchDialog(
         window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-            setDimAmount(.16f)
+            setDimAmount(JianquGlassMaterial.overlayDim)
             setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
         }

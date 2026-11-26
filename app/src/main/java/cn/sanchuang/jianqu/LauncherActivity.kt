@@ -224,9 +224,8 @@ class LauncherActivity : Activity() {
         fun surface(panel: View, radius: Int = JianquDimensions.companionRadiusDp): RippleDrawable {
             panels.add(panel)
             val context = wallpaper.context
-            val content = FrostedWallpaperBackground(wallpaper, panel, R.drawable.jq_home_background,
-                radius, android.graphics.Color.TRANSPARENT, context.getColor(R.color.jq_home_glass),
-                context.getColor(R.color.jq_home_glass_edge))
+            val content = JianquGlassMaterial.TILE.background(wallpaper, panel,
+                R.drawable.jq_home_background, radius)
             return RippleDrawable(android.content.res.ColorStateList.valueOf(context.getColor(R.color.jq_ripple)),
                 content, JianquDrawables.shape(context, android.graphics.Color.WHITE, radius))
         }
@@ -767,7 +766,8 @@ class LauncherActivity : Activity() {
 
     private fun showHomeSearch() {
         if (!admit() || homeSearch?.isShowing == true) return
-        val dialog = HomeAppSearchDialog(this, onOpen = ::open, onRetry = ::refreshApps)
+        val wallpaper = findViewById<FrameLayout>(android.R.id.content).getChildAt(0)
+        val dialog = HomeAppSearchDialog(this, wallpaper, onOpen = ::open, onRetry = ::refreshApps)
         homeSearch = dialog
         dialog.setOnDismissListener {
             if (homeSearch === dialog) homeSearch = null

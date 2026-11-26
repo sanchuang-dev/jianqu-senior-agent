@@ -25,10 +25,11 @@ internal class FrostedWallpaperBackground(
     radiusDp: Int,
     private val scrim: Int,
     private val tint: Int,
-    private val edge: Int
+    private val edge: Int,
+    blurRadius: Int
 ) : Drawable() {
     private val resources = root.resources
-    private val bitmap = blurredWallpaper(resources, wallpaperRes)
+    private val bitmap = blurredWallpaper(resources, wallpaperRes, blurRadius)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val path = Path()
     private val rect = RectF()
@@ -40,8 +41,8 @@ internal class FrostedWallpaperBackground(
 
     override fun draw(canvas: Canvas) {
         if (root.width == 0 || root.height == 0 || bounds.isEmpty) return
-        root.getLocationInWindow(rootLocation)
-        panel.getLocationInWindow(panelLocation)
+        root.getLocationOnScreen(rootLocation)
+        panel.getLocationOnScreen(panelLocation)
         val scale = max(root.width.toFloat() / bitmap.width, root.height.toFloat() / bitmap.height)
         val left = (root.width - bitmap.width * scale) / 2f + rootLocation[0] - panelLocation[0]
         val top = (root.height - bitmap.height * scale) / 2f + rootLocation[1] - panelLocation[1]
@@ -70,11 +71,12 @@ internal class FrostedWallpaperBackground(
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     companion object {
-        private val cache = mutableMapOf<Int, Bitmap>()
+        private val cache = mutableMapOf<Pair<Int, Int>, Bitmap>()
 
         @Synchronized
-        private fun blurredWallpaper(resources: Resources, wallpaperRes: Int): Bitmap {
-            cache[wallpaperRes]?.let { return it }
+        private fun blurredWallpaper(resources: Resources, wallpaperRes: Int, radius: Int): Bitmap {
+            val key = wallpaperRes to radius
+            cache[key]?.let { return it }
             val source = BitmapFactory.decodeResource(resources, wallpaperRes,
                 BitmapFactory.Options().apply { inSampleSize = 8; inPreferredConfig = Bitmap.Config.ARGB_8888 })
             val w = source.width
@@ -84,23 +86,24 @@ internal class FrostedWallpaperBackground(
             source.getPixels(pixels, 0, w, 0, 0, w, h)
             // Two separable box passes yield a soft Gaussian-like blur on the small bitmap.
             repeat(2) {
-                blur(pixels, scratch, w, h, true)
-                blur(scratch, pixels, w, h, false)
+                blur(pixels, scratch, w, h, true, radius)
+                blur(scratch, pixels, w, h, false, radius)
             }
             source.recycle()
-            return Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888).also { cache[wallpaperRes] = it }
+            return Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888).also { cache[key] = it }
         }
 
-        private fun blur(input: IntArray, output: IntArray, w: Int, h: Int, horizontal: Boolean) {
+        private fun blur(input: IntArray, output: IntArray, w: Int, h: Int, horizontal: Boolean, radius: Int) {
             for (y in 0 until h) for (x in 0 until w) {
                 var r = 0; var g = 0; var b = 0
-                for (offset in -2..2) {
+                for (offset in -radius..radius) {
                     val sx = if (horizontal) (x + offset).coerceIn(0, w - 1) else x
                     val sy = if (horizontal) y else (y + offset).coerceIn(0, h - 1)
                     val p = input[sy * w + sx]
                     r += (p ushr 16) and 255; g += (p ushr 8) and 255; b += p and 255
                 }
-                output[y * w + x] = (255 shl 24) or ((r / 5) shl 16) or ((g / 5) shl 8) or (b / 5)
+                val count = radius * 2 + 1
+                output[y * w + x] = (255 shl 24) or ((r / count) shl 16) or ((g / count) shl 8) or (b / count)
             }
         }
     }
