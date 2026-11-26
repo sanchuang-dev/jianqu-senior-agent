@@ -1,4 +1,4 @@
-name: Android prototype APK (debug)
+name: Android quality gate (debug)
 
 on:
   pull_request:
@@ -32,8 +32,8 @@ jobs:
       - name: Install Android SDK 35
         run: sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build debug APK and verify lint
-        run: bash ./gradlew --no-daemon --max-workers=2 :app:assembleDebug :app:lintDebug --console=plain
+      - name: Run unit tests, lint and build debug APK
+        run: bash ./gradlew --no-daemon --max-workers=2 :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain
       - name: Record artifact fingerprint
         shell: bash
         run: |

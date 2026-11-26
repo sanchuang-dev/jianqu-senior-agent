@@ -1,48 +1,86 @@
-# 闺蜜机 Launcher × 小暖｜Android 原型
+# 闺蜜机 Launcher × 小暖
 
-> 三创科技（SANCHUANG） ·「见趣」为暂定产品名 ·「小暖」为已确认的 AI 伙伴名
->
-> **工程基线：** JQ-002 的真实 Android Launcher 底座与 JQ-003 的本地设备订阅／小暖 Mock 均已并入 `dev`；第二期 HOME 改版和十个固定入口以 [PRD V0.2](docs/product/PRD-v0.2.md) 与 [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7) 为依据。**尚未完成实际闺蜜机验收。**
+> 三创科技（SANCHUANG） · Android Launcher 产品工程  
+> 「见趣」仍是暂定产品名；「小暖」是 AI 伙伴名。
 
-## V0.1 已有能力
+这个仓库已经进入**持续产品研发**，不是一次性原型存档。当前 `dev` 仍以 V0.2 预览实现为基础：底层 Android HOME 与应用启动是真实系统能力，天气使用真实外部服务；设备租赁、小暖、家人通话、内容、商城、SOS 等仍包含明显的 Mock / 未接入部分。后续真实租赁、会员、支付、AI 与通信能力必须按独立任务逐步替换，不能把可点击页面当成已上线服务。
 
-这是普通 Android 11+ 设备可安装的单 APK 演示原型，不是量产桌面或真正的养老 Agent。
+## 当前 dev 能力
 
-- **真实系统能力**：可作为普通 Android HOME，显示并启动系统允许发现的所有可启动已安装 App。
-- **模拟设备订阅**：在「我的闺蜜机」选择虚构套餐、模拟开通当前机器；可选同时演示另外两台虚构设备。
-- **小暖模拟**：一个 AI 伙伴名称、三种候选说话风格，各四条本地预设问答；显式标明「模拟 AI」。
-- **受控真实动作**：用户确认后通过 Android `LauncherApps` 启动系统真实已安装的 App。
-- **演示数据**：套餐资格仅存在本机 `SharedPreferences`，会话不落盘，退出清理；可重置本地 Mock。
+- **Android HOME**：普通第三方 APK 可被用户选择为默认桌面。
+- **真实应用目录**：通过 Android `LauncherApps` 枚举系统允许发现的可启动 App，并真实启动。
+- **天气**：手选城市、MET Norway 真实天气请求、缓存和失败回退；不读取设备 GPS。
+- **设备服务原型**：本机租赁与五项服务组合仍是本地演示数据，不会真实扣款或远程授权。
+- **小暖 / 家人通话 / 内容 / 本地生活 / SOS**：现阶段混合了本地脚本、Mock 状态和未接入承接页；界面必须继续诚实标识。
+- **真实设备验收未完成**：Android 11 模拟器证据不能替代目标 OEM 大屏设备。
 
-不包括真实 LLM、ASR/TTS、云端服务、支付、账号、医疗建议、机构管理、设备锁。构建通过不代表真实设备已验收。
+下一阶段产品讨论当前由 [Draft PR #37](https://github.com/sanchuang-dev/jianqu-senior-agent/pull/37) 承载；在其产品决策被正式收敛并拆成工程 Issue 前，不应直接据此改真实支付或外部服务。
 
-## 第二期 V0.2
+## 开发入口
 
-设计新的平衡型 HOME：时间日期与天气、小暖专区、十个固定功能、独立 SOS、单独全部应用页面。09「设置」、10「全部应用」固定；01–08 的名称／排列为讨论候选。服务源、微信通话、SOS、天气等真实接入需要单独验证，不应以 Mock 冒充上线能力。
+环境：
 
-**版本真相源按阶段划分，不混用：**
-- [PRD V0.1](docs/product/PRD-v0.1.md)：JQ-002/JQ-003 已有原型实施及设备验收合同。
-- [PRD V0.2](docs/product/PRD-v0.2.md)：第二期 Launcher 界面与业务入口产品地图。
-- [AGENTS.md](AGENTS.md)：仓库分支、权限与数据边界。
-- [JQ-001 #1](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)：一期最终设备验收。
-- [JQ-004 #7](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/7)：HOME 主屏 UI 与交互实施合同。
+- JDK 17+
+- Android SDK Platform 35 / Build Tools 35
+- 使用仓库内 Gradle Wrapper
 
-## 最新工程验证快照
-
-- [2026-11-23｜V0.2 工程进度与 Windows Android 11 验证](docs/verification/PROJECT-STATUS-2026-11-23.md)：发布位置、138 项定向回归、真实 HOME 链路、截图及尚未闭环的签名/OEM 验收风险。该报告是日期快照，不替代 PRD 或 Issue 验收合同。
-- [2026-11-23｜单机租赁订阅与二维码付款原型验收](docs/verification/JQ-003-rental-qr-2026-11-23.md)：取消多机/套餐演示；扫码付款原型、租期持久化、续租、取消及横竖屏截图。仅模拟，不收真实款。
-- [2026-11-24｜机器租赁与四项可组合服务原型](docs/verification/JQ-003-service-combination-2026-11-24.md)：人格陪伴／健康生活／影视娱乐／家人关怀的多选交互与模拟订单核对；取消、保存、重入、重置及横竖屏实测截图。服务定价及真实能力均未上线。
-
-## 构建与验收
-
-环境：JDK 17+、Android SDK Platform 35。使用仓库内 Gradle Wrapper，一个工程，一个 APK：
+完整本地质量检查：
 
 ```bash
-./gradlew :app:assembleDebug :app:lintDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
+./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain
+```
+
+安装调试包：
+
+```bash
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-通过 Android 的「默认应用 / 主屏幕应用」选择「闺蜜机（演示）」，可以在系统设置中恢复原桌面。调试 APK 未承诺正式签名或可覆盖升级。
+APK：
 
-**验收边界**：供应商所述 21.5—32 英寸、Android 11+、4GB+64GB、可旋转竖屏是参考值；真实机型、ROM、分辨率、方向、Home 返回和实际应用启动均需设备证据。PR/CI/编译成功只代表对应层级的检查。
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+> Debug APK 不是稳定签名的量产包，不能据此承诺覆盖升级。
+
+更完整的代码组织、测试层级、Mock/真实边界、秘密管理和技术债见 [工程开发指南](docs/engineering/development.md)。
+
+## 仓库地图
+
+```text
+app/
+  src/main/                 Android 产品代码与资源
+  src/test/                 不依赖设备/网络的 JVM 单元测试
+docs/
+  product/                  分阶段产品基线与产品讨论
+  design/                   已确认的界面/设计说明
+  engineering/              仓库级工程约束与开发说明
+  verification/             某个版本/日期的真实验证快照与证据索引
+.github/workflows/           构建、质量门禁与预发布流程
+AGENTS.md                    本仓库 AI / 工程协作边界
+```
+
+文档职责不要互相替代：产品文档回答“要做什么”，Issue 回答“这一张卡做到什么算完成”，代码/配置回答“现在实际上是什么”，验证文档只记录当时真实执行过的证据。
+
+## 分支与发布
+
+日常工程链路：
+
+```text
+feat/* → dev → test → prod
+```
+
+- 功能实现从最新 `dev` 开分支，PR 回 `dev`。
+- `test` / `prod` 只在维护者明确批准后晋级。
+- 预发布 tag 只允许来自 `prod` 当前提交；现有 release 工作流发布的是明确标注的 Debug prerelease。
+- 构建、CI、预发布成功都不等于 OEM 真机或真实外部服务验收完成。
+
+## 产品与工程真相源
+
+- [PRD V0.1](docs/product/PRD-v0.1.md)：早期 Launcher / 本地 Mock 产品基线。
+- [PRD V0.2](docs/product/PRD-v0.2.md)：当前预览界面和入口阶段基线。
+- [AGENTS.md](AGENTS.md)：仓库工程、数据、高风险能力和分支边界。
+- [工程开发指南](docs/engineering/development.md)：本地命令、质量门禁、代码组织与技术债。
+- [JQ-001 #1](https://github.com/sanchuang-dev/jianqu-senior-agent/issues/1)：目标 OEM 真机阶段验收，仍保持 Open。
+- [2026-11-23 工程快照](docs/verification/PROJECT-STATUS-2026-11-23.md)：历史验证证据，不代表今天的运行事实。

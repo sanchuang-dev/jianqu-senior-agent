@@ -2,14 +2,11 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.drawable.RippleDrawable
 import android.widget.FrameLayout
 import android.view.View
 import android.content.pm.LauncherApps
-import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -31,6 +28,7 @@ import android.widget.Toast
  * Only local rental expiry and demo service selections are stored; conversations stay in memory.
  */
 class DemoActivity : Activity() {
+    private val ui = JianquColors(this)
     companion object {
         const val EXTRA_OPEN_CHAT = "cn.sanchuang.jianqu.extra.OPEN_CHAT"
     }
@@ -50,13 +48,13 @@ class DemoActivity : Activity() {
     private val rentalTermDays = 30L // Prototype-only period, not a commercial offer.
     private val rentalTermMs = rentalTermDays * 24 * 60 * 60 * 1000
     private val rentalDevice = "JQ-DEMO-01" // Single local demo machine; no external device enrollment.
-    private val serviceOptions = listOf(
-        ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与个性记忆", LauncherUiTokens.companionStart, R.drawable.ic_home_hand_heart),
-        ServiceOption("wellness", "元气", "健康关怀", "康复训练、健康打卡", "健康计划与课程", LauncherUiTokens.healthIcon, R.drawable.ic_home_stethoscope),
-        ServiceOption("cinema", "光影", "影视娱乐", "影视、戏曲与音乐", "精选视听内容", LauncherUiTokens.videoIcon, R.drawable.ic_home_film_strip),
-        ServiceOption("family", "牵挂", "家人关怀", "家人通话与相册", "亲情互动", LauncherUiTokens.albumIcon, R.drawable.ic_home_video_camera),
-        ServiceOption("local", "惠享", "本地优惠", "本地生活优惠购", "9.9 折 · 示例权益", LauncherUiTokens.storeIcon, R.drawable.ic_home_shopping_bag_open)
-    )
+    private val serviceOptions by lazy { listOf(
+        ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与个性记忆", ui.companionStart, R.drawable.ic_home_hand_heart),
+        ServiceOption("wellness", "元气", "健康关怀", "康复训练、健康打卡", "健康计划与课程", ui.healthIcon, R.drawable.ic_home_stethoscope),
+        ServiceOption("cinema", "光影", "影视娱乐", "影视、戏曲与音乐", "精选视听内容", ui.videoIcon, R.drawable.ic_home_film_strip),
+        ServiceOption("family", "牵挂", "家人关怀", "家人通话与相册", "亲情互动", ui.albumIcon, R.drawable.ic_home_video_camera),
+        ServiceOption("local", "惠享", "本地优惠", "本地生活优惠购", "9.9 折 · 示例权益", ui.storeIcon, R.drawable.ic_home_shopping_bag_open)
+    ) }
     // A draft selection is never an entitlement until the demo payment is confirmed.
     private val pendingServiceIds = linkedSetOf<String>()
 
@@ -90,10 +88,10 @@ class DemoActivity : Activity() {
     private var redrawOnResume = false
     private var chatRequested = false
 
-    private val bg = LauncherUiTokens.background
-    private val ink = LauncherUiTokens.ink
-    private val muted = LauncherUiTokens.muted
-    private val accent = LauncherUiTokens.terracotta
+    private val bg get() = ui.background
+    private val ink get() = ui.ink
+    private val muted get() = ui.muted
+    private val accent get() = ui.accentStrong
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -143,16 +141,13 @@ class DemoActivity : Activity() {
 
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
 
-    private fun pressable(color: Int, outlined: Boolean = false) = RippleDrawable(
-        ColorStateList.valueOf(Color.argb(35, 123, 83, 64)),
-        paper(color, outlined),
-        null
-    )
+    private fun pressable(color: Int, outlined: Boolean = false) =
+        JianquDrawables.touch(this, color, stroke = if (outlined) ui.border else null)
 
     /** 56dp icon-only back target with the same touch treatment as HOME. */
     private fun backControl(description: String, click: () -> Unit): FrameLayout =
         FrameLayout(this).apply {
-            background = pressable(LauncherUiTokens.surface, outlined = true)
+            background = pressable(ui.surface, outlined = true)
             isClickable = true
             isFocusable = true
             contentDescription = description
@@ -196,12 +191,12 @@ class DemoActivity : Activity() {
         val view = TextView(this).apply {
             text = title
             textSize = 18f
-            setTextColor(if (primary) Color.WHITE else ink)
+            setTextColor(if (primary) ui.onAccent else ink)
             setTypeface(null, Typeface.BOLD)
             gravity = Gravity.CENTER
-            minHeight = dp(56)
+            minHeight = dp(JianquDimensions.largeActionHeightDp)
             setPadding(dp(12), dp(12), dp(12), dp(12))
-            background = pressable(if (primary) accent else LauncherUiTokens.surface, !primary)
+            background = pressable(if (primary) accent else ui.surface, !primary)
             isClickable = true
             isFocusable = true
             setOnClickListener { run() }
@@ -221,29 +216,18 @@ class DemoActivity : Activity() {
         resources.displayMetrics.widthPixels > resources.displayMetrics.heightPixels &&
             resources.displayMetrics.widthPixels / resources.displayMetrics.density >= 650f
 
-    private fun label(value: String, size: Float = 16f, color: Int = ink, bold: Boolean = false) =
-        TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            if (bold) setTypeface(null, Typeface.BOLD)
-            gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-        }
+    private fun label(value: String, size: Float = JianquTypography.bodySp, color: Int = ink, bold: Boolean = false) =
+        JianquTypography.text(this, value, size, color, bold)
 
-    private fun paper(color: Int = LauncherUiTokens.surface, outlined: Boolean = false): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(LauncherUiTokens.cardRadiusDp).toFloat()
-            if (outlined) setStroke(dp(1), LauncherUiTokens.divider)
-        }
+    private fun paper(color: Int = ui.surface, outlined: Boolean = false): GradientDrawable =
+        JianquDrawables.shape(this, color, stroke = if (outlined) ui.border else null)
 
     private fun actionText(value: String, primary: Boolean = false, click: () -> Unit) =
-        label(value, 16f, if (primary) Color.WHITE else accent, true).apply {
+        label(value, 16f, if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
-            minHeight = dp(48)
+            minHeight = dp(JianquDimensions.compactActionHeightDp)
             setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = pressable(if (primary) accent else LauncherUiTokens.surface, !primary)
+            background = pressable(if (primary) accent else ui.surface, !primary)
             isClickable = true
             isFocusable = true
             setOnClickListener { click() }
@@ -307,11 +291,11 @@ class DemoActivity : Activity() {
                     orientation = LinearLayout.VERTICAL
                     minimumHeight = dp(116)
                     setPadding(dp(13), dp(12), dp(13), dp(12))
-                    background = LauncherUiTokens.touch(
+                    background = JianquDrawables.touch(
                         this@DemoActivity,
                         service.backgroundColor,
                         14,
-                        if (selected) accent else LauncherUiTokens.divider
+                        if (selected) accent else ui.border
                     )
                     isClickable = true
                     isFocusable = true
@@ -369,7 +353,7 @@ class DemoActivity : Activity() {
             setPadding(dp(24), dp(23), dp(24), dp(25))
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)
+                intArrayOf(ui.companionStart, ui.companionEnd)
             ).apply { cornerRadius = dp(18).toFloat() }
         }
         line(overview, "见趣 · 闺蜜机", 21f, ink, true, 0)
@@ -550,10 +534,10 @@ class DemoActivity : Activity() {
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(14), dp(if (landscape) 25 else 14), dp(14), dp(14))
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)
-            ).apply { cornerRadius = dp(LauncherUiTokens.companionRadiusDp).toFloat() }
+                intArrayOf(ui.companionStart, ui.companionEnd)
+            ).apply { cornerRadius = dp(JianquDimensions.companionRadiusDp).toFloat() }
         }
-        val orb = LauncherUiTokens.companionOrb(this)
+        val orb = companionOrb(this)
         orb.contentDescription = "小暖陪伴标志"
         profile.addView(orb, LinearLayout.LayoutParams(dp(68), dp(68)))
         profile.addView(label(styles[styleIndex].title, 25f, ink, true).apply { gravity = Gravity.CENTER },
@@ -567,9 +551,9 @@ class DemoActivity : Activity() {
         val stylesRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         styles.forEachIndexed { index, style ->
             val selected = styleIndex == index
-            stylesRow.addView(label(style.label, 16f, if (selected) Color.WHITE else ink, true).apply {
+            stylesRow.addView(label(style.label, 16f, if (selected) ui.onAccent else ink, true).apply {
                 gravity = Gravity.CENTER
-                background = pressable(if (selected) accent else LauncherUiTokens.surface, !selected)
+                background = pressable(if (selected) accent else ui.surface, !selected)
                 isClickable = true
                 isFocusable = true
                 contentDescription = "切换小暖风格：${style.title}"
@@ -653,7 +637,7 @@ class DemoActivity : Activity() {
             conversation.forEach { exchange ->
                 val userRow = LinearLayout(this).apply { gravity = Gravity.END }
                 userRow.addView(label("你：${exchange.prompt}", 17f).apply {
-                    background = paper(LauncherUiTokens.messageUser)
+                    background = paper(ui.messageUser)
                     setPadding(dp(14), dp(11), dp(14), dp(11))
                 }, LinearLayout.LayoutParams(-2, -2))
                 container.addView(userRow, LinearLayout.LayoutParams(-1, -2).apply {
@@ -661,7 +645,7 @@ class DemoActivity : Activity() {
                 })
                 val replyRow = LinearLayout(this).apply { gravity = Gravity.START }
                 replyRow.addView(label("小暖 · ${styles[styleIndex].label}：${exchange.reply}", 17f).apply {
-                    background = paper(LauncherUiTokens.messageAssistant, outlined = true)
+                    background = paper(ui.messageAssistant, outlined = true)
                     setPadding(dp(14), dp(11), dp(14), dp(11))
                 }, LinearLayout.LayoutParams(-2, -2))
                 container.addView(replyRow, LinearLayout.LayoutParams(-1, -2).apply {
