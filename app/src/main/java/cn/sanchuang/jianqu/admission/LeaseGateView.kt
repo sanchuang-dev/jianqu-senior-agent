@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -16,7 +17,6 @@ import cn.sanchuang.jianqu.R
 import cn.sanchuang.jianqu.JianquDrawables
 import cn.sanchuang.jianqu.JianquTypography
 import cn.sanchuang.jianqu.JianquDimensions
-import cn.sanchuang.jianqu.companionOrb
 
 /** Standalone gate. It never grants access or writes a rental entitlement. */
 internal class LeaseGateView(private val activity: Activity) {
@@ -60,19 +60,6 @@ internal class LeaseGateView(private val activity: Activity) {
                 gravity = if (wide) Gravity.START else Gravity.CENTER
             }
         intro("见趣 · 闺蜜机", 18f, bold = true)
-        val halo = FrameLayout(activity).apply {
-            background = JianquDrawables.shape(activity, ui.accentSoft, 100)
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        }
-        val ring = View(activity).apply { background = JianquDrawables.shape(activity, ui.accentSoftBorder, 100) }
-        val orbSize = if (wide) 78 else 60
-        halo.addView(ring, FrameLayout.LayoutParams(dp(orbSize + 30), dp(orbSize + 30), Gravity.CENTER))
-        halo.addView(companionOrb(activity), FrameLayout.LayoutParams(dp(orbSize), dp(orbSize), Gravity.CENTER))
-        val haloSize = orbSize + 56
-        pane.addView(halo, LinearLayout.LayoutParams(dp(haloSize), dp(haloSize)).apply {
-            topMargin = dp(if (wide) 22 else 16)
-            gravity = if (wide) Gravity.START else Gravity.CENTER_HORIZONTAL
-        })
         val headline = when (state) {
             DeviceAccess.NOT_RENTED -> if (pending) "即将开启新生活" else "美好生活，\n从见趣开始"
             DeviceAccess.EXPIRED -> "期待继续陪伴您"
@@ -80,7 +67,7 @@ internal class LeaseGateView(private val activity: Activity) {
             else -> "正在检查设备状态"
         }
         intro(if (!wide) headline.replace("\n", "") else headline, if (wide) 34f else 28f,
-            top = 16, display = true)
+            top = if (wide) 28 else 16, display = true)
         intro(when (state) {
             DeviceAccess.NOT_RENTED -> "开通本机租赁，即可使用见趣桌面。"
             DeviceAccess.EXPIRED -> "设备租赁已到期，续租后即可恢复使用。"
@@ -93,12 +80,20 @@ internal class LeaseGateView(private val activity: Activity) {
 
     fun render(state: DeviceAccess, developer: View?, checkout: LeaseCheckout?,
                retry: () -> Unit, network: () -> Unit, changed: () -> Unit): View {
-        val root = ScrollView(activity).apply {
-            isFillViewport = true
-            setBackgroundColor(ui.background)
-        }
+        val root = FrameLayout(activity).apply { setBackgroundColor(ui.background) }
+        root.addView(ImageView(activity).apply {
+            setImageResource(R.drawable.jq_daylight_background)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, FrameLayout.LayoutParams(-1, -1))
+        root.addView(View(activity).apply {
+            setBackgroundColor(activity.getColor(R.color.jq_lease_scrim))
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, FrameLayout.LayoutParams(-1, -1))
+        val scroll = ScrollView(activity).apply { isFillViewport = true }
+        root.addView(scroll, FrameLayout.LayoutParams(-1, -1))
         val frame = FrameLayout(activity).apply { setPadding(dp(20), dp(14), dp(20), dp(14)) }
-        root.addView(frame)
+        scroll.addView(frame)
         val shell = column()
         val available = (activity.resources.displayMetrics.widthPixels - dp(40)).coerceAtLeast(dp(200))
         frame.addView(shell, FrameLayout.LayoutParams(available.coerceAtMost(dp(if (wide) 1040 else 520)),
@@ -109,7 +104,7 @@ internal class LeaseGateView(private val activity: Activity) {
         val card = column().apply {
             val padding = dp(if (wide) 18 else 20)
             setPadding(padding, padding, padding, padding)
-            background = JianquDrawables.shape(activity, ui.surface, JianquDimensions.companionRadiusDp, ui.border)
+            background = JianquDrawables.shape(activity, activity.getColor(R.color.jq_lease_panel), JianquDimensions.companionRadiusDp, ui.surface)
         }
 
         if (rentalPage && checkout != null) {
@@ -134,24 +129,24 @@ internal class LeaseGateView(private val activity: Activity) {
         fun utility(icon: Int, title: String, click: () -> Unit) = JianquIcons.label(activity, icon, title, 14f, ui.muted).apply {
             gravity = Gravity.CENTER
             minimumHeight = dp(JianquDimensions.compactActionHeightDp)
-            background = JianquDrawables.touch(activity, ui.background, JianquDimensions.tileRadiusDp)
+            background = JianquDrawables.touch(activity, activity.getColor(R.color.jq_lease_panel), JianquDimensions.tileRadiusDp)
             setOnClickListener { click() }
             isFocusable = true
         }
-        footer.addView(utility(R.drawable.ic_jq_network, "网络设置", network), LinearLayout.LayoutParams(0, -2, 1f))
+        footer.addView(utility(R.drawable.ic_jq_network, "网络设置", network), LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = dp(8) })
         footer.addView(utility(R.drawable.ic_jq_support, "扫码联系客服") { showSupport() }, LinearLayout.LayoutParams(0, -2, 1f))
         developer?.let {
-            it.background = JianquDrawables.touch(activity, ui.background, JianquDimensions.tileRadiusDp)
+            it.background = JianquDrawables.touch(activity, activity.getColor(R.color.jq_lease_panel), JianquDimensions.tileRadiusDp)
             if (it is TextView) {
                 it.setTextColor(ui.muted)
                 val icon = activity.getDrawable(R.drawable.ic_jq_development)?.mutate()
                 icon?.setTint(ui.muted)
                 it.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
                 it.compoundDrawablePadding = dp(5)
-                it.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                it.gravity = Gravity.CENTER
                 it.setPadding(dp(12), 0, dp(8), 0)
             }
-            footer.addView(it, LinearLayout.LayoutParams(0, -2, 1f))
+            footer.addView(it, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
         }
         add(shell, footer, 8)
         copy(shell, "紧急情况请使用可靠电话或联系现场人员。", 13f, ui.muted).gravity = Gravity.CENTER

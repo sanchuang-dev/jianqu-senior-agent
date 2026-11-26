@@ -35,4 +35,7 @@
     <color name="jq_companion_end">#FFF6EC</color>
     <!-- WeChat brand recognition only; never an authorization indicator. -->
     <color name="jq_wechat_brand">#07C160</color>
+    <!-- Translucent surfaces over the rental welcome wallpaper. -->
+    <color name="jq_lease_scrim">#66FFFFFF</color>
+    <color name="jq_lease_panel">#F0FFFFFF</color>
 </resources>
