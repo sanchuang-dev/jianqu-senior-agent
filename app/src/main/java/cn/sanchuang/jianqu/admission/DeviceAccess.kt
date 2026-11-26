@@ -15,5 +15,6 @@ internal enum class DeviceAccess {
 internal interface DeviceAccessSource {
     fun current(): DeviceAccess
     fun refresh(): DeviceAccess = current()
+    fun checkout(): LeaseCheckout? = null
     fun developerControl(activity: Activity, changed: () -> Unit): View? = null
 }

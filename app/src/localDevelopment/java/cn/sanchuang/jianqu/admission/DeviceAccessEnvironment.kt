@@ -28,8 +28,12 @@ private class LocalDeviceAccess(context: Context) : DeviceAccessSource {
         it.first.name == preferences.getString("scenario", null)
     }?.first ?: DeviceAccess.NOT_RENTED
 
-    private fun select(state: DeviceAccess) {
+    private val localCheckout = LocalCheckout { select(DeviceAccess.ACTIVE, resetCheckout = false) }
+    override fun checkout(): LeaseCheckout = localCheckout
+
+    private fun select(state: DeviceAccess, resetCheckout: Boolean = true) {
         preferences.edit().putString("scenario", state.name).apply()
+        if (resetCheckout) localCheckout.reset()
     }
 
     override fun developerControl(activity: Activity, changed: () -> Unit): View {
@@ -53,6 +57,46 @@ private class LocalDeviceAccess(context: Context) : DeviceAccessSource {
                     .setNegativeButton("取消", null)
                     .show()
             }
+        }
+    }
+}
+
+/** Fake order service, restricted to the localDevelopment source set. */
+private class LocalCheckout(private val confirmed: () -> Unit) : LeaseCheckout {
+    override var term = LeaseTerm.MONTH
+        private set
+    override var phase = CheckoutPhase.IDLE
+        private set
+
+    fun reset() {
+        term = LeaseTerm.MONTH
+        phase = CheckoutPhase.IDLE
+    }
+    override fun choose(term: LeaseTerm) {
+        if (phase != CheckoutPhase.PENDING && phase != CheckoutPhase.CONFIRMED) this.term = term
+    }
+    override fun start() { phase = phase.transition(CheckoutEvent.START) }
+    override fun cancel() { phase = phase.transition(CheckoutEvent.CANCEL) }
+    override fun recheck() { phase = phase.transition(CheckoutEvent.RECHECK) }
+
+    override fun developmentActions(activity: Activity, changed: () -> Unit): View? {
+        if (phase != CheckoutPhase.PENDING) return null
+        val ui = JianquColors(activity)
+        return JianquTypography.text(activity, "模拟付款结果", 16f, ui.accentStrong, true).apply {
+            gravity = Gravity.CENTER
+            minHeight = (56 * resources.displayMetrics.density + .5f).toInt()
+            background = JianquDrawables.touch(activity, ui.accentSoft, stroke = ui.accentSoftBorder)
+            setOnClickListener {
+                AlertDialog.Builder(activity)
+                    .setTitle("开发测试 · 不产生真实付款")
+                    .setItems(arrayOf("模拟服务端确认成功", "模拟付款失败", "模拟订单超时")) { _, index ->
+                        val event = listOf(CheckoutEvent.CONFIRM, CheckoutEvent.FAIL, CheckoutEvent.TIMEOUT)[index]
+                        phase = phase.transition(event)
+                        if (phase == CheckoutPhase.CONFIRMED) confirmed()
+                        changed()
+                    }.setNegativeButton("取消", null).show()
+            }
+            isFocusable = true
         }
     }
 }

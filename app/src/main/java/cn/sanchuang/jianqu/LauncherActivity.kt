@@ -193,9 +193,12 @@ class LauncherActivity : Activity() {
         appLoadVersion++
         searchUpdate?.let(main::removeCallbacks)
         setContentView(LeaseGateView(this).render(
-            state, access.developerControl(this) { showHome() },
+            state, access.developerControl(this) {
+                val next = access.refresh(); if (next.allowsHome) showHome() else renderGate(next)
+            }, access.checkout(),
             retry = { val next = access.refresh(); if (next.allowsHome) showHome() else renderGate(next) },
-            network = { openAndroidSettings(Settings.ACTION_WIFI_SETTINGS) }
+            network = { openAndroidSettings(Settings.ACTION_WIFI_SETTINGS) },
+            changed = { val next = access.refresh(); if (next.allowsHome) showHome() else renderGate(next) }
         ))
     }
 
