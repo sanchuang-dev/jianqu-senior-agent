@@ -220,14 +220,22 @@ class LauncherActivity : Activity() {
         if (!admit()) return
         page = Page.HOME
         renderedGateState = null
-        val root = homeColumn().apply {
+        val wallpaper = FrameLayout(this).apply {
             setBackgroundColor(getColor(R.color.jq_home_canvas))
+            addView(ImageView(this@LauncherActivity).apply {
+                setImageResource(R.drawable.jq_home_background)
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(-1, -1))
+        }
+        val root = homeColumn().apply {
             val side = if (landscape) 20 else 16
             setPadding(dp(side), dp(10), dp(side), dp(10))
         }
+        wallpaper.addView(root, FrameLayout.LayoutParams(-1, -1))
         desktopBars.apply(edgeToEdge = true)
         LauncherSystemBars.insetContent(root)
-        setContentView(root)
+        setContentView(wallpaper)
         root.requestApplyInsets()
         val header = homeRow()
         header.addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
