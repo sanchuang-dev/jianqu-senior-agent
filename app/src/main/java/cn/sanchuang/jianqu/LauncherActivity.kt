@@ -321,23 +321,7 @@ class LauncherActivity : Activity() {
         weather.addView(text(label, 13f, muted).apply { gravity = Gravity.CENTER; maxLines = 2 })
         summary.addView(weather, LinearLayout.LayoutParams(0, -2, 0.85f))
         body.addView(summary, LinearLayout.LayoutParams(-1, -2))
-        if (forecast != null) {
-            val days = homeRow().apply {
-                setPadding(dp(6), dp(7), dp(6), dp(7))
-                background = homeSurface()
-                isFocusable = true
-                contentDescription = "天气预报，查看七日详情"
-                setOnClickListener { openWeather() }
-            }
-            forecast.days.take(if (landscape) 6 else 4).forEachIndexed { index, day ->
-                val item = homeColumn().apply { gravity = Gravity.CENTER_HORIZONTAL }
-                item.addView(text(if (index == 0) "今天" else day.title.substringAfter(" "), 12f, muted).apply { gravity = Gravity.CENTER })
-                item.addView(homeIcon(weatherIcon(day.symbol)), LinearLayout.LayoutParams(dp(30), dp(30)))
-                item.addView(text("${day.high}°/${day.low}°", 12f, ink).apply { gravity = Gravity.CENTER })
-                days.addView(item, LinearLayout.LayoutParams(0, -2, 1f))
-            }
-            body.addView(days, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-        }
+
     }
 
     private fun buildCompanion(body: LinearLayout) {
