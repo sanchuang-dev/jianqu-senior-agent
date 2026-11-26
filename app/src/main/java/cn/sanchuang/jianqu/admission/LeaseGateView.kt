@@ -153,8 +153,6 @@ internal class LeaseGateView(private val activity: Activity) {
             addUtility(it)
         }
         add(intro, utilities, 18)
-        copy(intro, "紧急情况请使用可靠电话或联系现场人员。", 13f, ui.muted).gravity =
-            if (wide) Gravity.START else Gravity.CENTER
 
         if (wide) {
             val content = row()
