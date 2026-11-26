@@ -308,6 +308,30 @@ class LauncherActivity : Activity() {
             top.addView(companion, LinearLayout.LayoutParams(0, -2, 1f))
             top.addView(environment, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
             body.addView(top, LinearLayout.LayoutParams(-1, -2))
+        } else if (!landscape) {
+            val top = homeRow()
+            val environment = homeColumn()
+            buildEnvironment(environment, glass)
+            top.addView(environment, LinearLayout.LayoutParams(0, -2, 1.85f))
+            val companion = homeColumn().apply {
+                gravity = Gravity.CENTER
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+                background = glass.surface(this)
+                contentDescription = "小暖，进入本地模拟陪伴交互"
+                isFocusable = true
+                setOnClickListener { openCompanion() }
+                addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(40), dp(40)))
+                addView(text("和小暖聊聊吧…", 15f, ink).apply {
+                    gravity = Gravity.CENTER
+                    maxLines = 2
+                }, LinearLayout.LayoutParams(-1, -2))
+            }
+            top.addView(companion, LinearLayout.LayoutParams(0, -1, 1f).apply { leftMargin = dp(10) })
+            body.addView(top, LinearLayout.LayoutParams(-1, -2))
+            body.addSpace(10)
+            body.addView(homeGreeting().apply {
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+            }, LinearLayout.LayoutParams(-1, -2))
         } else {
             buildEnvironment(body, glass)
             body.addSpace(10)
@@ -346,7 +370,12 @@ class LauncherActivity : Activity() {
             format24Hour = "M月d日 EEEE"
             textSize = 14f
             setTextColor(muted)
-        }, LinearLayout.LayoutParams(-2, -2))
+            if (!landscape) {
+                maxLines = 1
+                setAutoSizeTextTypeUniformWithConfiguration(11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+            }
+        }, if (landscape) LinearLayout.LayoutParams(-2, -2)
+           else LinearLayout.LayoutParams(0, -2, 1f))
         if (forecast?.stale == true) {
             dateRow.addView(View(this).apply {
                 background = JianquDrawables.shape(this@LauncherActivity,
@@ -360,22 +389,16 @@ class LauncherActivity : Activity() {
             returningFromWeather = true
             startActivity(Intent(this, WeatherActivity::class.java))
         }
-        val split = !landscape
         val summary = homeRow().apply {
-            if (!split) {
-                setPadding(dp(14), dp(10), dp(14), dp(10))
-                background = glass.surface(this)
-            }
+            val side = if (landscape) 14 else 10
+            setPadding(dp(side), dp(10), dp(side), dp(10))
+            background = glass.surface(this)
             contentDescription = if (forecast?.stale == true) "天气数据可能已过期，查看七日预报" else "天气，查看七日预报"
             isFocusable = true
             setOnClickListener { openWeather() }
         }
         clock.gravity = Gravity.BOTTOM
-        if (split) {
-            clock.setPadding(dp(14), dp(10), dp(14), dp(10))
-            clock.background = glass.surface(clock)
-        }
-        summary.addView(clock, LinearLayout.LayoutParams(0, -1, if (split) 1.85f else 1f))
+        summary.addView(clock, LinearLayout.LayoutParams(0, -1, 1f))
         val weather = homeColumn().apply {
             gravity = Gravity.CENTER_HORIZONTAL or if (forecast != null) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
         }
@@ -395,13 +418,7 @@ class LauncherActivity : Activity() {
             if (forecast != null) setAutoSizeTextTypeUniformWithConfiguration(
                 11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
         }, LinearLayout.LayoutParams(-1, -2))
-        if (split) {
-            weather.setPadding(dp(8), dp(10), dp(8), dp(10))
-            weather.background = glass.surface(weather)
-        }
-        summary.addView(weather, LinearLayout.LayoutParams(0, -1, if (split) 1f else 0.85f).apply {
-            if (split) leftMargin = dp(10)
-        })
+        summary.addView(weather, LinearLayout.LayoutParams(0, -1, 0.85f))
         body.addView(summary, LinearLayout.LayoutParams(-1, -2))
 
     }
@@ -412,20 +429,9 @@ class LauncherActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             contentDescription = "小暖，进入本地模拟陪伴交互"
             isFocusable = true
-            setOnClickListener {
-                if (!admit()) return@setOnClickListener
-                startActivity(Intent(this@LauncherActivity, DemoActivity::class.java)
-                    .putExtra(DemoActivity.EXTRA_OPEN_CHAT, true))
-            }
+            setOnClickListener { openCompanion() }
         }
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val greeting = when (hour) {
-            in 0..10 -> "早上好"
-            in 11..13 -> "中午好"
-            in 14..17 -> "下午好"
-            else -> "晚上好"
-        }
-        tile.addView(JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 25f, ink))
+        tile.addView(homeGreeting())
         val talk = homeRow().apply {
             background = glass.surface(this, 24)
             setPadding(dp(12), 0, dp(12), 0)
@@ -434,6 +440,22 @@ class LauncherActivity : Activity() {
         talk.addView(text("和小暖聊聊吧…", 16f, ink), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
         tile.addView(talk, LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(12) })
         body.addView(tile, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun openCompanion() {
+        if (!admit()) return
+        startActivity(Intent(this, DemoActivity::class.java).putExtra(DemoActivity.EXTRA_OPEN_CHAT, true))
+    }
+
+    private fun homeGreeting(): View {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val greeting = when (hour) {
+            in 0..10 -> "早上好"
+            in 11..13 -> "中午好"
+            in 14..17 -> "下午好"
+            else -> "晚上好"
+        }
+        return JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 25f, ink)
     }
 
     private fun homeActionIcon(action: QuickAction): Int = when (action.destination) {
