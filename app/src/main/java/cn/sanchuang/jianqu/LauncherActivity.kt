@@ -256,11 +256,12 @@ class LauncherActivity : Activity() {
         val brand = homeRow().apply {
             minimumHeight = dp(48)
             addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
-            addView(text("见趣 · 闺蜜机", 18f, ink, true),
-                LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
+            addView(text("见趣 · 闺蜜机", 18f, ink, true).apply {
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
         }
-        header.addView(brand, LinearLayout.LayoutParams(-2, -2))
-        header.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         val developer = access.developerAction(this) { showHome() }
         if (developer != null) {
             var taps = 0
@@ -276,10 +277,12 @@ class LauncherActivity : Activity() {
                     developer()
                 }
             }
-        } else if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
-            header.addView(text("公开预览 · 租赁未接入", 12f, muted))
         }
+        buildHomeHeaderActions(header)
         root.addView(header, LinearLayout.LayoutParams(-1, -2))
+        if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
+            root.addView(text("公开预览 · 租赁未接入", 12f, muted))
+        }
         val scroll = ScrollView(this).apply {
             clipToPadding = false
             isFillViewport = true
@@ -307,7 +310,6 @@ class LauncherActivity : Activity() {
         }
         body.addSpace(12)
         buildQuickActions(body, glass)
-        buildSos(root)
     }
 
     private fun weatherIcon(symbol: String): Int = when (symbol) {
@@ -421,52 +423,48 @@ class LauncherActivity : Activity() {
         quickActions.take(8).chunked(cols).forEach { group ->
             val row = homeRow()
             group.forEachIndexed { index, item ->
-                row.addView(makeQuickAction(item, false, glass), LinearLayout.LayoutParams(0, dp(90), 1f).apply {
+                row.addView(makeQuickAction(item, glass), LinearLayout.LayoutParams(0, dp(90), 1f).apply {
                     if (index > 0) leftMargin = dp(8)
                 })
             }
             body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
-        val utilities = homeRow().apply { gravity = Gravity.CENTER }
-        quickActions.drop(8).forEachIndexed { index, item ->
-            utilities.addView(makeQuickAction(item, true, glass), LinearLayout.LayoutParams(0, dp(48), 1f).apply {
-                if (index > 0) leftMargin = dp(12)
-            })
-        }
-        body.addView(utilities, LinearLayout.LayoutParams(-1, -2))
     }
 
-    private fun makeQuickAction(action: QuickAction, utility: Boolean, glass: HomeGlass): View =
-        (if (utility) homeRow() else homeColumn()).apply {
+    private fun makeQuickAction(action: QuickAction, glass: HomeGlass): View =
+        homeColumn().apply {
             gravity = Gravity.CENTER
             setPadding(dp(3), dp(4), dp(3), dp(4))
-            background = glass.surface(this, if (utility) 24 else JianquDimensions.companionRadiusDp)
+            background = glass.surface(this)
             isFocusable = true
             contentDescription = action.title
-            val size = if (utility) 30 else 48
-            addView(homeIcon(homeActionIcon(action)), LinearLayout.LayoutParams(dp(size), dp(size)))
+            addView(homeIcon(homeActionIcon(action)), LinearLayout.LayoutParams(dp(48), dp(48)))
             addView(text(action.title, 15f, ink, true).apply { gravity = Gravity.CENTER },
-                LinearLayout.LayoutParams(if (utility) -2 else -1, -2).apply {
-                    if (utility) leftMargin = dp(8) else topMargin = dp(3)
-                })
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
             setOnClickListener { openQuickAction(action.destination, action.title) }
         }
 
-    private fun buildSos(root: LinearLayout) {
-        val row = homeRow().apply {
-            gravity = Gravity.CENTER
-            background = touch(ui.dangerSurface, 20, ui.dangerBorder)
-            isFocusable = true
-            contentDescription = "SOS 紧急求助，当前为未接入真实求救功能的原型"
-            setOnClickListener {
-                if (!admit()) return@setOnClickListener
-                startActivity(Intent(this@LauncherActivity, SosActivity::class.java))
+    private fun buildHomeHeaderActions(header: LinearLayout) {
+        fun iconButton(resource: Int, description: String, action: () -> Unit) {
+            val button = FrameLayout(this).apply {
+                background = RippleDrawable(
+                    android.content.res.ColorStateList.valueOf(getColor(R.color.jq_ripple)), null,
+                    JianquDrawables.shape(this@LauncherActivity, android.graphics.Color.WHITE, 24))
+                isFocusable = true
+                contentDescription = description
+                tooltipText = description
+                addView(homeIcon(resource), FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER))
+                setOnClickListener { action() }
             }
+            header.addView(button, LinearLayout.LayoutParams(dp(48), dp(48)))
         }
-        row.addView(homeIcon(R.drawable.jq_home_alarm), LinearLayout.LayoutParams(dp(32), dp(32)))
-        row.addView(text("SOS 紧急求助", 16f, ui.danger, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(6) })
-        row.addView(text("原型未接入", 12f, ui.danger), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
-        root.addView(row, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        quickActions.filter { it.destination == QuickActionDestination.SETTINGS ||
+            it.destination == QuickActionDestination.ALL_APPS }.forEach { item ->
+            iconButton(homeActionIcon(item), item.title) { openQuickAction(item.destination, item.title) }
+        }
+        iconButton(R.drawable.jq_home_alarm, "SOS 紧急求助，当前为未接入真实求救功能的原型") {
+            if (admit()) startActivity(Intent(this, SosActivity::class.java))
+        }
     }
 
     private fun openQuickAction(destination: QuickActionDestination, name: String) {
