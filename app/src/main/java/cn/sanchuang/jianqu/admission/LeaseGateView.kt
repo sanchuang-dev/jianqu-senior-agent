@@ -133,7 +133,7 @@ internal class LeaseGateView(private val activity: Activity) {
         val footer = row().apply { gravity = Gravity.CENTER }
         fun utility(icon: Int, title: String, click: () -> Unit) = JianquIcons.label(activity, icon, title, 14f, ui.muted).apply {
             gravity = Gravity.CENTER
-            minHeight = dp(JianquDimensions.compactActionHeightDp)
+            minimumHeight = dp(JianquDimensions.compactActionHeightDp)
             background = JianquDrawables.touch(activity, ui.background, JianquDimensions.tileRadiusDp)
             setOnClickListener { click() }
             isFocusable = true
