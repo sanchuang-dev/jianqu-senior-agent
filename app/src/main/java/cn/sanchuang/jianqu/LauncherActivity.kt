@@ -31,6 +31,9 @@ import android.widget.ScrollView
 import android.widget.TextClock
 import android.widget.TextView
 import android.widget.Toast
+import cn.sanchuang.jianqu.admission.DeviceAccess
+import cn.sanchuang.jianqu.admission.DeviceAccessEnvironment
+import cn.sanchuang.jianqu.admission.LeaseGateView
 import cn.sanchuang.jianqu.system.apps.LauncherAppCatalog
 import cn.sanchuang.jianqu.system.apps.LauncherAppSearch
 import java.util.concurrent.Executors
@@ -44,7 +47,9 @@ import java.util.concurrent.RejectedExecutionException
  */
 class LauncherActivity : Activity() {
     private val ui = JianquColors(this)
-    private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
+    private enum class Page { HOME, ALL_APPS, SETTINGS, HELP, RENTAL_GATE }
+    private val access by lazy { DeviceAccessEnvironment.open(this) }
+    private var renderedGateState: DeviceAccess? = null
 
     private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, STOREFRONT, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
 
@@ -118,6 +123,11 @@ class LauncherActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (!admit()) return
+        if (page == Page.RENTAL_GATE) {
+            showHome()
+            return
+        }
         if (returningFromWeather) {
             returningFromWeather = false
             showHome()
@@ -131,7 +141,9 @@ class LauncherActivity : Activity() {
 
     @Deprecated("Android back navigation callback; HOME must remain the root destination.")
     override fun onBackPressed() {
+        if (!admit()) return
         when (page) {
+            Page.RENTAL_GATE -> showHome()
             Page.ALL_APPS, Page.SETTINGS -> showHome()
             Page.HELP -> showSettings()
             Page.HOME -> Unit // A launcher never closes itself on Back.
@@ -165,8 +177,32 @@ class LauncherActivity : Activity() {
         addView(View(context), LinearLayout.LayoutParams(1, dp(height)))
     }
 
+    /** One admission check for every path that can reveal the normal desktop. */
+    private fun admit(): Boolean {
+        val state = access.refresh()
+        if (state.allowsHome) return true
+        if (page != Page.RENTAL_GATE || renderedGateState != state) renderGate(state)
+        return false
+    }
+
+    private fun renderGate(state: DeviceAccess) {
+        page = Page.RENTAL_GATE
+        renderedGateState = state
+        restoreHomeOnResume = false
+        returningFromWeather = false
+        appLoadVersion++
+        searchUpdate?.let(main::removeCallbacks)
+        setContentView(LeaseGateView(this).render(
+            state, access.developerControl(this) { showHome() },
+            retry = { val next = access.refresh(); if (next.allowsHome) showHome() else renderGate(next) },
+            network = { openAndroidSettings(Settings.ACTION_WIFI_SETTINGS) }
+        ))
+    }
+
     private fun showHome() {
+        if (!admit()) return
         page = Page.HOME
+        renderedGateState = null
         val side = if (landscape) 28 else 20
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -252,15 +288,22 @@ class LauncherActivity : Activity() {
             isFocusable = true
             contentDescription = "天气，查看七日预报"
             setOnClickListener {
+                if (!admit()) return@setOnClickListener
                 returningFromWeather = true
                 startActivity(Intent(this@LauncherActivity, WeatherActivity::class.java))
             }
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
 
-        val infoWidth = if (landscape) 360 else 300
-        row.addView(environment, LinearLayout.LayoutParams(dp(infoWidth), -2))
-        // Reserve horizontal space for future authorized artwork without forcing extra vertical space.
-        row.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        row.addView(environment, LinearLayout.LayoutParams(0, -2, 1f))
+        val developer = access.developerControl(this) { showHome() }
+        if (developer != null) {
+            row.addView(developer, LinearLayout.LayoutParams(dp(88), -2).apply { leftMargin = dp(8) })
+        } else if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
+            row.addView(text("公开预览\n租赁未接入", 12f, muted).apply { gravity = Gravity.END },
+                LinearLayout.LayoutParams(dp(86), -2))
+        } else {
+            row.addView(View(this), LinearLayout.LayoutParams(0, 1, 0.25f))
+        }
         body.addView(row)
     }
 
@@ -274,6 +317,7 @@ class LauncherActivity : Activity() {
             isClickable = true
             isFocusable = true
             setOnClickListener {
+                if (!admit()) return@setOnClickListener
                 startActivity(
                     Intent(this@LauncherActivity, DemoActivity::class.java)
                         .putExtra(DemoActivity.EXTRA_OPEN_CHAT, true)
@@ -358,6 +402,7 @@ class LauncherActivity : Activity() {
     }
 
     private fun openQuickAction(destination: QuickActionDestination, name: String) {
+        if (!admit()) return
         when (destination) {
             QuickActionDestination.ALL_APPS -> showAllApps()
             QuickActionDestination.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
@@ -390,6 +435,7 @@ class LauncherActivity : Activity() {
     }
 
     private fun showSettings() {
+        if (!admit()) return
         page = Page.SETTINGS
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -502,6 +548,7 @@ class LauncherActivity : Activity() {
     }
 
     private fun showHelp() {
+        if (!admit()) return
         page = Page.HELP
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -559,6 +606,7 @@ class LauncherActivity : Activity() {
         uiPreferences.edit().putBoolean("intro_seen", true).apply()
     }
     private fun showAllApps() {
+        if (!admit()) return
         page = Page.ALL_APPS
         restoreHomeOnResume = false
         val root = LinearLayout(this).apply {
@@ -717,6 +765,7 @@ class LauncherActivity : Activity() {
     }
 
     private fun open(entry: LauncherActivityInfo) {
+        if (!admit()) return
         try {
             restoreHomeOnResume = true
             appCatalogAdapter.launch(entry)

@@ -13,6 +13,18 @@ android {
         versionCode = 4
         versionName = "0.2.2-preview"
     }
+    buildTypes {
+        create("localDevelopment") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".development"
+            versionNameSuffix = "-local"
+            matchingFallbacks += listOf("debug")
+        }
+    }
+    sourceSets {
+        getByName("debug").java.srcDir("src/preview/java")
+        getByName("release").java.srcDir("src/preview/java")
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
