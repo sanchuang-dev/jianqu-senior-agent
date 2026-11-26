@@ -17,6 +17,7 @@ import cn.sanchuang.jianqu.R
 import cn.sanchuang.jianqu.JianquDrawables
 import cn.sanchuang.jianqu.JianquTypography
 import cn.sanchuang.jianqu.JianquDimensions
+import cn.sanchuang.jianqu.LauncherSystemBars
 
 /** Standalone gate. It never grants access or writes a rental entitlement. */
 internal class LeaseGateView(private val activity: Activity) {
@@ -95,9 +96,16 @@ internal class LeaseGateView(private val activity: Activity) {
         val frame = FrameLayout(activity).apply { setPadding(dp(20), dp(14), dp(20), dp(14)) }
         scroll.addView(frame)
         val shell = column()
-        val available = (activity.resources.displayMetrics.widthPixels - dp(40)).coerceAtLeast(dp(200))
-        frame.addView(shell, FrameLayout.LayoutParams(available.coerceAtMost(dp(if (wide) 1040 else 520)),
-            -2, Gravity.CENTER))
+        frame.addView(shell, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
+        LauncherSystemBars.insetContent(scroll)
+        // The measured viewport excludes the navigation bar even when it is on the side.
+        frame.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val available = (frame.width - frame.paddingLeft - frame.paddingRight).coerceAtLeast(1)
+            val width = available.coerceAtMost(dp(if (wide) 1040 else 520))
+            if (shell.layoutParams.width != width) {
+                shell.layoutParams = shell.layoutParams.apply { this.width = width }
+            }
+        }
         val rentalPage = state == DeviceAccess.NOT_RENTED || state == DeviceAccess.EXPIRED
         val pending = rentalPage && checkout?.phase == CheckoutPhase.PENDING
         val intro = welcome(state, pending, developer != null)

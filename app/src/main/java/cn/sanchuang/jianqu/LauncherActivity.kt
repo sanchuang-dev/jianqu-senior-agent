@@ -49,6 +49,7 @@ class LauncherActivity : Activity() {
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP, RENTAL_GATE }
     private val access by lazy { DeviceAccessEnvironment.open(this) }
     private var renderedGateState: DeviceAccess? = null
+    private val desktopBars by lazy { LauncherSystemBars(window) }
 
     private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, STOREFRONT, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
 
@@ -191,6 +192,7 @@ class LauncherActivity : Activity() {
         returningFromWeather = false
         appLoadVersion++
         searchUpdate?.let(main::removeCallbacks)
+        desktopBars.apply(edgeToEdge = true)
         setContentView(LeaseGateView(this).render(
             state, access.developerControl(this) {
                 val next = access.refresh(); if (next.allowsHome) showHome() else renderGate(next)
@@ -223,7 +225,10 @@ class LauncherActivity : Activity() {
             val side = if (landscape) 20 else 16
             setPadding(dp(side), dp(10), dp(side), dp(10))
         }
+        desktopBars.apply(edgeToEdge = true)
+        LauncherSystemBars.insetContent(root)
         setContentView(root)
+        root.requestApplyInsets()
         val header = homeRow()
         header.addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
         header.addView(text("见趣 · 闺蜜机", 18f, ink, true),
@@ -461,6 +466,7 @@ class LauncherActivity : Activity() {
             setBackgroundColor(backgroundColor)
             setPadding(dp(19), dp(16), dp(19), dp(16))
         }
+        desktopBars.apply(edgeToEdge = false)
         setContentView(root)
         root.addView(text("‹  返回桌面", 18f, terracotta, true).apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -574,6 +580,7 @@ class LauncherActivity : Activity() {
             setBackgroundColor(backgroundColor)
             setPadding(dp(20), dp(16), dp(20), dp(20))
         }
+        desktopBars.apply(edgeToEdge = false)
         setContentView(root)
         root.addView(text("‹  返回设置", 18f, terracotta, true).apply {
             isClickable = true
@@ -633,6 +640,7 @@ class LauncherActivity : Activity() {
             setBackgroundColor(backgroundColor)
             setPadding(dp(19), dp(16), dp(19), dp(12))
         }
+        desktopBars.apply(edgeToEdge = false)
         setContentView(root)
 
         val back = text("‹  返回桌面", 18f, terracotta, true).apply {
