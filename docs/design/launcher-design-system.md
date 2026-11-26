@@ -14,8 +14,14 @@ JianquDimensions 和 JianquTypography 定义公共尺寸/文字层级；Android 
 
 ## 图标
 
-功能图标统一使用 Phosphor Icons Duotone 的原生 VectorDrawable，按需从上游 `phosphor-icons/core/assets/duotone/` 引入，保留 APK 内 MIT 许可。新页面复用 `JianquIcons` 图文组合及语义 tint；不混入 Emoji 或临时字符图标。品牌图标采用独立品牌色，微信图标是渠道识别，不表示官方支付已接通；真实支付和客服二维码均须由后续可信服务提供，未配置时显示不可扫描占位。
+辅助操作图标使用 Phosphor Icons Duotone 的原生 VectorDrawable，按需从上游 `phosphor-icons/core/assets/duotone/` 引入，保留 APK 内 MIT 许可。新页面复用 `JianquIcons` 图文组合及语义 tint；不混入 Emoji 或临时字符图标。品牌图标采用独立品牌色，微信图标是渠道识别，不表示官方支付已接通；真实支付和客服二维码均须由后续可信服务提供，未配置时显示不可扫描占位。
 
 ## 设备租赁欢迎页背景
 
 使用用户提供的日光客厅纯背景 WebP（`drawable-nodpi/jq_daylight_background.webp`）；固定在滚动内容下方，横竖屏等比中心裁切，浅色遮罩和半透明面板使用颜色资源。移除欢迎区独立光球，保留真正的原生交互、开发态标记和全部准入/付款逻辑。素材不包含文字、设备或界面。
+
+## HOME 图像素材
+
+首页固定十入口和 SOS 使用已确认的 3D 图标套装（`jianqu-launcher-icons.zip`），品牌、语音、天气使用先前 `jianqu-home-icons.zip` 的对应 WebP。运行时仅保留实际引用的 WebP，位于 `app/src/main/res/drawable-nodpi/`；不将原图、预览图或未采用的 PNG 打进 APK。完整素材源包与预览归档见 [assets/README.md](assets/README.md)，保留两代原始资源，便于后续视觉更新。小暖人物立绘未提供，不使用替代图。
+
+HOME 与租赁页共用 `FrostedWallpaperBackground`，各自的静态背景及材质颜色由资源定义；不使用逐帧实时模糊。

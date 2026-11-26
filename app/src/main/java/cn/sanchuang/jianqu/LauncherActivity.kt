@@ -390,6 +390,9 @@ class LauncherActivity : Activity() {
         QuickActionDestination.CONTENT_VIDEO -> R.drawable.jq_home_video
         QuickActionDestination.STOREFRONT -> R.drawable.jq_home_shopping
         QuickActionDestination.CONTENT_HEALTH -> R.drawable.jq_home_health
+        QuickActionDestination.CONTENT_MUSIC -> R.drawable.jq_home_music_opera
+        QuickActionDestination.CONTENT_NEWS -> R.drawable.jq_home_governance
+        QuickActionDestination.SERVICES -> R.drawable.jq_home_my_services
         QuickActionDestination.SETTINGS -> R.drawable.jq_home_settings
         QuickActionDestination.ALL_APPS -> R.drawable.jq_home_all_apps
         else -> 0
