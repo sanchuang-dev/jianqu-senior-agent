@@ -360,15 +360,22 @@ class LauncherActivity : Activity() {
             returningFromWeather = true
             startActivity(Intent(this, WeatherActivity::class.java))
         }
+        val split = !landscape
         val summary = homeRow().apply {
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-            background = glass.surface(this)
+            if (!split) {
+                setPadding(dp(14), dp(10), dp(14), dp(10))
+                background = glass.surface(this)
+            }
             contentDescription = if (forecast?.stale == true) "天气数据可能已过期，查看七日预报" else "天气，查看七日预报"
             isFocusable = true
             setOnClickListener { openWeather() }
         }
         clock.gravity = Gravity.BOTTOM
-        summary.addView(clock, LinearLayout.LayoutParams(0, -1, 1f))
+        if (split) {
+            clock.setPadding(dp(14), dp(10), dp(14), dp(10))
+            clock.background = glass.surface(clock)
+        }
+        summary.addView(clock, LinearLayout.LayoutParams(0, -1, if (split) 1.85f else 1f))
         val weather = homeColumn().apply {
             gravity = Gravity.CENTER_HORIZONTAL or if (forecast != null) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
         }
@@ -388,7 +395,13 @@ class LauncherActivity : Activity() {
             if (forecast != null) setAutoSizeTextTypeUniformWithConfiguration(
                 11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
         }, LinearLayout.LayoutParams(-1, -2))
-        summary.addView(weather, LinearLayout.LayoutParams(0, -1, 0.85f))
+        if (split) {
+            weather.setPadding(dp(8), dp(10), dp(8), dp(10))
+            weather.background = glass.surface(weather)
+        }
+        summary.addView(weather, LinearLayout.LayoutParams(0, -1, if (split) 1f else 0.85f).apply {
+            if (split) leftMargin = dp(10)
+        })
         body.addView(summary, LinearLayout.LayoutParams(-1, -2))
 
     }
