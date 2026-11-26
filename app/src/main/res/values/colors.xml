@@ -12,6 +12,7 @@
     <color name="jq_on_accent">@color/jq_surface</color>
     <color name="jq_accent_secondary">#1F9E8F</color>
     <color name="jq_success">#0F7A6B</color>
+    <color name="jq_status_stale">#E2B43F</color>
     <color name="jq_accent_soft">#FDE9E2</color>
     <color name="jq_accent_soft_border">#F6D3C5</color>
     <color name="jq_orb_core">#FFD9C9</color>

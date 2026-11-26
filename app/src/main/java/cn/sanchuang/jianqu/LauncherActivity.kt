@@ -340,12 +340,21 @@ class LauncherActivity : Activity() {
             typeface = Typeface.create("serif", Typeface.NORMAL)
             includeFontPadding = false
         })
-        clock.addView(TextClock(this).apply {
+        val dateRow = homeRow()
+        dateRow.addView(TextClock(this).apply {
             format12Hour = "M月d日 EEEE"
             format24Hour = "M月d日 EEEE"
             textSize = 14f
             setTextColor(muted)
-        })
+        }, LinearLayout.LayoutParams(-2, -2))
+        if (forecast?.stale == true) {
+            dateRow.addView(View(this).apply {
+                background = JianquDrawables.shape(this@LauncherActivity,
+                    getColor(R.color.jq_status_stale), 3)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(6), dp(6)).apply { leftMargin = dp(6) })
+        }
+        clock.addView(dateRow, LinearLayout.LayoutParams(-1, -2))
         fun openWeather() {
             if (!admit()) return
             returningFromWeather = true
@@ -354,7 +363,7 @@ class LauncherActivity : Activity() {
         val summary = homeRow().apply {
             setPadding(dp(14), dp(10), dp(14), dp(10))
             background = glass.surface(this)
-            contentDescription = "天气，查看七日预报"
+            contentDescription = if (forecast?.stale == true) "天气数据可能已过期，查看七日预报" else "天气，查看七日预报"
             isFocusable = true
             setOnClickListener { openWeather() }
         }
@@ -368,7 +377,6 @@ class LauncherActivity : Activity() {
             place == null -> "选择城市"
             !WeatherData.consented(this) -> "${place.name} · 启用天气"
             forecast == null -> "${place.name} · 查询天气"
-            forecast.stale -> "${place.name} · 缓存过期"
             else -> "${place.name} · ${forecast.days.first().symbol}"
         }
         weather.addView(text(label, 13f, muted).apply { gravity = Gravity.CENTER; maxLines = 2 })
