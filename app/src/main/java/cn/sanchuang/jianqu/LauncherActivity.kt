@@ -327,11 +327,11 @@ class LauncherActivity : Activity() {
                 }, LinearLayout.LayoutParams(-1, -2))
             }
             top.addView(companion, LinearLayout.LayoutParams(0, -1, 1f).apply { leftMargin = dp(10) })
-            body.addView(top, LinearLayout.LayoutParams(-1, -2))
-            body.addSpace(10)
             body.addView(homeGreeting().apply {
                 setPadding(dp(12), dp(8), dp(12), dp(8))
             }, LinearLayout.LayoutParams(-1, -2))
+            body.addSpace(10)
+            body.addView(top, LinearLayout.LayoutParams(-1, -2))
         } else {
             buildEnvironment(body, glass)
             body.addSpace(10)
