@@ -3,7 +3,6 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -19,11 +18,7 @@ internal abstract class ServicePreviewActivity : Activity() {
     protected fun wide() = resources.displayMetrics.widthPixels > resources.displayMetrics.heightPixels &&
         resources.displayMetrics.widthPixels / resources.displayMetrics.density >= 650f
     protected fun text(value: String, size: Float = JianquTypography.bodySp, color: Int = ui.ink, bold: Boolean = false) =
-        TextView(this).apply {
-            text = value; textSize = size; setTextColor(color); includeFontPadding = false
-            gravity = Gravity.CENTER_VERTICAL
-            if (bold) setTypeface(null, Typeface.BOLD)
-        }
+        JianquTypography.text(this, value, size, color, bold)
     protected fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
     protected fun line(parent: LinearLayout, value: String, size: Float = JianquTypography.bodySp,
                        color: Int = ui.ink, bold: Boolean = false, top: Int = 8): TextView =
