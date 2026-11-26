@@ -33,4 +33,6 @@
     <color name="jq_all_apps_icon">#E6E3F5</color>
     <color name="jq_success_track">#CDDECD</color>
     <color name="jq_companion_end">#FFF6EC</color>
+    <!-- WeChat brand recognition only; never an authorization indicator. -->
+    <color name="jq_wechat_brand">#07C160</color>
 </resources>

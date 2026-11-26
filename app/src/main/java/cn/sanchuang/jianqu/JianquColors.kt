@@ -4,6 +4,7 @@ import android.content.Context
 
 /** Semantic colors backed by Android resources; safe to construct before Activity.attach. */
 internal class JianquColors(private val context: Context) {
+    val wechatBrand: Int get() = context.getColor(R.color.jq_wechat_brand)
     val background: Int get() = context.getColor(R.color.jq_background)
     val surface: Int get() = context.getColor(R.color.jq_surface)
     val surfaceSecondary: Int get() = context.getColor(R.color.jq_surface_secondary)

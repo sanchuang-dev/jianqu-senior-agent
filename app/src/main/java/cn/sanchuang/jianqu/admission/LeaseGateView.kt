@@ -11,6 +11,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import cn.sanchuang.jianqu.JianquColors
+import cn.sanchuang.jianqu.JianquIcons
+import cn.sanchuang.jianqu.R
 import cn.sanchuang.jianqu.JianquDrawables
 import cn.sanchuang.jianqu.JianquTypography
 import cn.sanchuang.jianqu.JianquDimensions
@@ -129,22 +131,26 @@ internal class LeaseGateView(private val activity: Activity) {
             add(shell, card, 12)
         }
         val footer = row().apply { gravity = Gravity.CENTER }
-        fun utility(title: String, click: () -> Unit) = JianquTypography.text(activity, title, 14f, ui.muted, true).apply {
+        fun utility(icon: Int, title: String, click: () -> Unit) = JianquIcons.label(activity, icon, title, 14f, ui.muted).apply {
             gravity = Gravity.CENTER
             minHeight = dp(JianquDimensions.compactActionHeightDp)
             background = JianquDrawables.touch(activity, ui.background, JianquDimensions.tileRadiusDp)
             setOnClickListener { click() }
             isFocusable = true
         }
-        footer.addView(utility("网络设置", network), LinearLayout.LayoutParams(0, -2, 1f))
-        footer.addView(utility("联系客服") {
-            android.app.AlertDialog.Builder(activity).setTitle("客服暂未接入")
-                .setMessage("请联系设备提供方。紧急情况请使用可靠电话或联系现场人员。")
-                .setPositiveButton("知道了", null).show()
-        }, LinearLayout.LayoutParams(0, -2, 1f))
+        footer.addView(utility(R.drawable.ic_jq_network, "网络设置", network), LinearLayout.LayoutParams(0, -2, 1f))
+        footer.addView(utility(R.drawable.ic_jq_support, "扫码联系客服") { showSupport() }, LinearLayout.LayoutParams(0, -2, 1f))
         developer?.let {
             it.background = JianquDrawables.touch(activity, ui.background, JianquDimensions.tileRadiusDp)
-            if (it is TextView) it.setTextColor(ui.muted)
+            if (it is TextView) {
+                it.setTextColor(ui.muted)
+                val icon = activity.getDrawable(R.drawable.ic_jq_development)?.mutate()
+                icon?.setTint(ui.muted)
+                it.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
+                it.compoundDrawablePadding = dp(5)
+                it.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                it.setPadding(dp(12), 0, dp(8), 0)
+            }
             footer.addView(it, LinearLayout.LayoutParams(0, -2, 1f))
         }
         add(shell, footer, 8)
@@ -186,11 +192,13 @@ internal class LeaseGateView(private val activity: Activity) {
         }
         action(card, (if (state == DeviceAccess.EXPIRED) "续租" else "立即开通") + " · ¥" +
             checkout.term.exampleAmountYuan, true, 12) { checkout.start(); changed() }
-        copy(card, "支持家人微信扫码付款 · 当前仅演示", 13f, ui.muted, 8).gravity = Gravity.CENTER
+        add(card, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码付款 · 演示", 14f,
+            ui.muted, ui.wechatBrand, false), 8)
     }
 
     private fun payment(card: LinearLayout, checkout: LeaseCheckout, changed: () -> Unit) {
-        copy(card, "微信扫码付款 · 演示", 20f, bold = true)
+        add(card, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码付款 · 演示", 20f,
+            ui.ink, ui.wechatBrand).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL })
         val summary = row()
         val code = DemoCode(activity)
         val size = if (wide) 98 else 128
@@ -211,6 +219,30 @@ internal class LeaseGateView(private val activity: Activity) {
             isFocusable = true
         }
         add(card, cancel, 4)
+    }
+
+    private fun showSupport() {
+        val body = column().apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(12), dp(24), dp(10))
+        }
+        add(body, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码联系客服", 18f, ui.ink, ui.wechatBrand))
+        val placeholder = FrameLayout(activity).apply {
+            background = JianquDrawables.shape(activity, ui.surfaceSecondary, JianquDimensions.cardRadiusDp)
+            addView(JianquIcons.image(activity, R.drawable.ic_jq_qr_code, ui.muted),
+                FrameLayout.LayoutParams(dp(76), dp(76), Gravity.CENTER))
+            contentDescription = "客服二维码尚未配置"
+        }
+        body.addView(placeholder, LinearLayout.LayoutParams(dp(148), dp(148)).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            topMargin = dp(16)
+        })
+        copy(body, "客服二维码尚未配置", 16f, ui.ink, 12, bold = true).gravity = Gravity.CENTER
+        copy(body, "请联系设备提供方。当前图案不可扫描。", 14f, ui.muted, 8).gravity = Gravity.CENTER
+        android.app.AlertDialog.Builder(activity)
+            .setView(body)
+            .setPositiveButton("关闭", null)
+            .show()
     }
 
     /** Deliberately non-decodable placeholder, never a payment QR or URL. */
