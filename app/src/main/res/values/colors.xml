@@ -37,7 +37,6 @@
     <color name="jq_wechat_brand">#07C160</color>
     <!-- Translucent surfaces over the rental welcome wallpaper. -->
     <color name="jq_lease_scrim">#66FFFFFF</color>
-    <color name="jq_lease_panel">#F0FFFFFF</color>
     <!-- Static frosted wallpaper panel; keep footer and payment controls legible. -->
     <color name="jq_lease_glass_tint">#73FFFFFF</color>
     <color name="jq_lease_glass_edge">#E6FFFFFF</color>

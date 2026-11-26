@@ -118,6 +118,44 @@ internal class LeaseGateView(private val activity: Activity) {
             action(card, "重新检查", true, 20, retry)
         }
 
+        // Secondary actions belong with the welcome copy, not in a full-width button bar.
+        val utilities = row().apply { gravity = if (wide) Gravity.START else Gravity.CENTER }
+        fun utility(icon: Int, title: String, description: String, click: () -> Unit) =
+            JianquIcons.label(activity, icon, title, 15f, ui.ink, bold = false).apply {
+                minimumHeight = dp(JianquDimensions.compactActionHeightDp)
+                setPadding(dp(8), 0, dp(8), 0)
+                background = utilityFeedback()
+                contentDescription = description
+                setOnClickListener { click() }
+                isFocusable = true
+            }
+        fun addUtility(view: View) {
+            utilities.addView(view, LinearLayout.LayoutParams(-2, dp(JianquDimensions.compactActionHeightDp)).apply {
+                if (utilities.childCount > 0) leftMargin = dp(12)
+            })
+        }
+        addUtility(utility(R.drawable.ic_jq_network, "网络", "网络设置", network))
+        addUtility(utility(R.drawable.ic_jq_support, "客服", "扫码联系客服") { showSupport() })
+        developer?.let {
+            it.background = utilityFeedback()
+            if (it is TextView) {
+                it.text = "调试"
+                it.textSize = 15f
+                it.setTypeface(null, android.graphics.Typeface.NORMAL)
+                it.setTextColor(ui.ink)
+                val icon = activity.getDrawable(R.drawable.ic_jq_development)?.mutate()
+                icon?.setTint(ui.ink)
+                it.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
+                it.compoundDrawablePadding = dp(7)
+                it.gravity = Gravity.CENTER
+                it.setPadding(dp(8), 0, dp(8), 0)
+            }
+            addUtility(it)
+        }
+        add(intro, utilities, 18)
+        copy(intro, "紧急情况请使用可靠电话或联系现场人员。", 13f, ui.muted).gravity =
+            if (wide) Gravity.START else Gravity.CENTER
+
         if (wide) {
             val content = row()
             content.addView(intro, LinearLayout.LayoutParams(0, -2, 0.95f))
@@ -127,33 +165,14 @@ internal class LeaseGateView(private val activity: Activity) {
             add(shell, intro)
             add(shell, card, 12)
         }
-        val footer = row().apply { gravity = Gravity.CENTER }
-        fun utility(icon: Int, title: String, click: () -> Unit) = JianquIcons.label(activity, icon, title, 14f, ui.muted).apply {
-            gravity = Gravity.CENTER
-            minimumHeight = dp(JianquDimensions.compactActionHeightDp)
-            background = JianquDrawables.touch(activity, activity.getColor(R.color.jq_lease_panel), JianquDimensions.tileRadiusDp)
-            setOnClickListener { click() }
-            isFocusable = true
-        }
-        footer.addView(utility(R.drawable.ic_jq_network, "网络设置", network), LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = dp(8) })
-        footer.addView(utility(R.drawable.ic_jq_support, "扫码联系客服") { showSupport() }, LinearLayout.LayoutParams(0, -2, 1f))
-        developer?.let {
-            it.background = JianquDrawables.touch(activity, activity.getColor(R.color.jq_lease_panel), JianquDimensions.tileRadiusDp)
-            if (it is TextView) {
-                it.setTextColor(ui.muted)
-                val icon = activity.getDrawable(R.drawable.ic_jq_development)?.mutate()
-                icon?.setTint(ui.muted)
-                it.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
-                it.compoundDrawablePadding = dp(5)
-                it.gravity = Gravity.CENTER
-                it.setPadding(dp(12), 0, dp(8), 0)
-            }
-            footer.addView(it, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
-        }
-        add(shell, footer, 8)
-        copy(shell, "紧急情况请使用可靠电话或联系现场人员。", 13f, ui.muted).gravity = Gravity.CENTER
         return root
     }
+
+    private fun utilityFeedback() = android.graphics.drawable.RippleDrawable(
+        android.content.res.ColorStateList.valueOf(activity.getColor(R.color.jq_ripple)),
+        null,
+        JianquDrawables.shape(activity, ui.surface, JianquDimensions.tileRadiusDp)
+    )
 
     private fun rental(card: LinearLayout, checkout: LeaseCheckout, state: DeviceAccess, changed: () -> Unit) {
         copy(card, "设备租赁", 19f, bold = true)
