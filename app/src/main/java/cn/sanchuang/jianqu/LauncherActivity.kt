@@ -320,7 +320,7 @@ class LauncherActivity : Activity() {
                 contentDescription = "小暖，进入本地模拟陪伴交互"
                 isFocusable = true
                 setOnClickListener { openCompanion() }
-                addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(40), dp(40)))
+                addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(64), dp(64)))
                 addView(text("和小暖聊聊吧…", 15f, ink).apply {
                     gravity = Gravity.CENTER
                     maxLines = 2
