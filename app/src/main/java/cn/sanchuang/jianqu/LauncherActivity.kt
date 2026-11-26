@@ -33,6 +33,7 @@ import android.widget.Toast
 import cn.sanchuang.jianqu.admission.DeviceAccess
 import cn.sanchuang.jianqu.admission.DeviceAccessEnvironment
 import cn.sanchuang.jianqu.admission.LeaseGateView
+import cn.sanchuang.jianqu.system.apps.HomeAppSearchDialog
 import cn.sanchuang.jianqu.system.apps.LauncherAppCatalog
 import cn.sanchuang.jianqu.system.apps.LauncherAppSearch
 import java.util.concurrent.Executors
@@ -40,7 +41,7 @@ import java.util.concurrent.RejectedExecutionException
 
 /**
  * Android HOME is a stable place to return to, not the device's entire application catalog.
- * All ten home functions are fixed; only the "全部应用" page enumerates real installed apps.
+ * All ten home functions are fixed; the app catalog and HOME search share real installed apps.
  * Other business/communication functions are intentionally honest navigation placeholders
  * until their independent JQ-005..011 contracts are implemented.
  */
@@ -74,6 +75,7 @@ class LauncherActivity : Activity() {
     private var installedApps: List<LauncherActivityInfo> = emptyList()
     private var appLoadVersion = 0
     private var searchUpdate: Runnable? = null
+    private var homeSearch: HomeAppSearchDialog? = null
     private val uiPreferences by lazy { getSharedPreferences("launcher_ui", MODE_PRIVATE) }
     private var page = Page.HOME
     private var restoreHomeOnResume = false
@@ -117,6 +119,7 @@ class LauncherActivity : Activity() {
     }
 
     override fun onStop() {
+        homeSearch?.dismiss()
         if (page == Page.ALL_APPS) restoreHomeOnResume = true
         super.onStop()
     }
@@ -151,6 +154,7 @@ class LauncherActivity : Activity() {
     }
 
     override fun onDestroy() {
+        homeSearch?.dismiss()
         appCatalogAdapter.stop()
         searchUpdate?.let(main::removeCallbacks)
         worker.shutdownNow()
@@ -186,6 +190,7 @@ class LauncherActivity : Activity() {
     }
 
     private fun renderGate(state: DeviceAccess) {
+        homeSearch?.dismiss()
         page = Page.RENTAL_GATE
         renderedGateState = state
         restoreHomeOnResume = false
@@ -231,6 +236,7 @@ class LauncherActivity : Activity() {
 
     private fun showHome() {
         if (!admit()) return
+        homeSearch?.dismiss()
         page = Page.HOME
         renderedGateState = null
         val wallpaper = FrameLayout(this).apply {
@@ -458,6 +464,7 @@ class LauncherActivity : Activity() {
             }
             header.addView(button, LinearLayout.LayoutParams(dp(48), dp(48)).apply { leftMargin = dp(8) })
         }
+        iconButton(R.drawable.ic_jq_app_search, "搜索应用") { showHomeSearch() }
         quickActions.filter { it.destination == QuickActionDestination.SETTINGS ||
             it.destination == QuickActionDestination.ALL_APPS }.forEach { item ->
             iconButton(homeActionIcon(item), item.title) { openQuickAction(item.destination, item.title) }
@@ -758,8 +765,21 @@ class LauncherActivity : Activity() {
         refreshApps()
     }
 
+    private fun showHomeSearch() {
+        if (!admit() || homeSearch?.isShowing == true) return
+        val dialog = HomeAppSearchDialog(this, onOpen = ::open, onRetry = ::refreshApps)
+        homeSearch = dialog
+        dialog.setOnDismissListener {
+            if (homeSearch === dialog) homeSearch = null
+        }
+        dialog.show()
+        refreshApps()
+    }
+
     private fun refreshApps() {
-        if (page != Page.ALL_APPS || isDestroyed || worker.isShutdown || !::catalog.isInitialized) return
+        val dialog = homeSearch?.takeIf { it.isShowing }
+        if (isDestroyed || worker.isShutdown || (dialog == null &&
+                (page != Page.ALL_APPS || !::catalog.isInitialized))) return
         val request = ++appLoadVersion
         try {
             worker.execute {
@@ -767,7 +787,13 @@ class LauncherActivity : Activity() {
                     appCatalogAdapter.load()
                 }
                 main.post {
-                    if (page == Page.ALL_APPS && request == appLoadVersion &&
+                    if (request == appLoadVersion && !isDestroyed && !isFinishing &&
+                        dialog != null && homeSearch === dialog && dialog.isShowing && page == Page.HOME) {
+                        result.onSuccess { dialog.showApps(it) }.onFailure {
+                            Log.e("JianquLauncher", "Cannot load installed applications", it)
+                            dialog.showError()
+                        }
+                    } else if (dialog == null && page == Page.ALL_APPS && request == appLoadVersion &&
                         !isDestroyed && !isFinishing) {
                         result.onSuccess { entries ->
                             installedApps = entries
@@ -838,6 +864,7 @@ class LauncherActivity : Activity() {
         try {
             restoreHomeOnResume = true
             appCatalogAdapter.launch(entry)
+            homeSearch?.dismiss()
         } catch (e: Exception) {
             restoreHomeOnResume = false
             Log.w("JianquLauncher", "Application disappeared before launch", e)

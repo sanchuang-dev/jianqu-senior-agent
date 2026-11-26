@@ -45,4 +45,5 @@
     <color name="jq_home_canvas">#F3E8DE</color>
     <color name="jq_home_glass">#59FFFFFF</color>
     <color name="jq_home_glass_edge">#BFFFFFFF</color>
+    <color name="jq_home_search_surface">#F2FFFFFF</color>
 </resources>
