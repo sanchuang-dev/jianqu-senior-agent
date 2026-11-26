@@ -183,7 +183,7 @@ class LauncherActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(backgroundColor)
-            setPadding(dp(side), dp(if (landscape) 10 else 16), dp(side), dp(12))
+            setPadding(dp(side), dp(if (landscape) 10 else 12), dp(side), dp(10))
         }
         setContentView(root)
 
@@ -201,20 +201,19 @@ class LauncherActivity : Activity() {
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         buildEnvironment(body)
-        body.addSpace(if (landscape) 12 else 19)
+        body.addSpace(if (landscape) 12 else 12)
         buildCompanion(body)
-        body.addSpace(if (landscape) 12 else 19)
+        body.addSpace(if (landscape) 12 else 12)
 
         val section = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             orientation = LinearLayout.HORIZONTAL
         }
-        section.addView(text("常用功能", 18f, ink, true), LinearLayout.LayoutParams(0, dp(34), 1f))
-        section.addView(text("固定入口", 12f, muted))
+        section.addView(JianquTypography.display(this, "常用功能", JianquTypography.sectionSp, ink), LinearLayout.LayoutParams(0, dp(34), 1f))
         body.addView(section)
-        body.addSpace(8)
+        body.addSpace(4)
         buildQuickActions(body)
-        body.addSpace(10)
+        body.addSpace(4)
 
         buildSos(root)
     }
@@ -232,9 +231,9 @@ class LauncherActivity : Activity() {
         environment.addView(TextClock(this).apply {
             format12Hour = "hh:mm"
             format24Hour = "HH:mm"
-            textSize = if (landscape) 34f else 42f
+            textSize = if (landscape) 36f else 44f
             setTextColor(ink)
-            setTypeface(null, Typeface.BOLD)
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             includeFontPadding = false
         })
         environment.addView(TextClock(this).apply {
@@ -270,10 +269,10 @@ class LauncherActivity : Activity() {
             }
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
 
-        val infoWidth = if (landscape) 360 else 262
+        val infoWidth = if (landscape) 360 else 300
         row.addView(environment, LinearLayout.LayoutParams(dp(infoWidth), -2))
-        // Intentional blank area; no placeholder drawing or fake artwork.
-        row.addView(View(this), LinearLayout.LayoutParams(0, dp(116), 1f))
+        // Reserve horizontal space for future authorized artwork without forcing extra vertical space.
+        row.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         body.addView(row)
     }
 
@@ -282,12 +281,7 @@ class LauncherActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(18), dp(13), dp(16), dp(13))
-            background = JianquDrawables.ripple(this@LauncherActivity,
-                GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(ui.companionStart, ui.companionEnd)).apply {
-                    cornerRadius = dp(JianquDimensions.companionRadiusDp).toFloat()
-                }
-            )
+            background = touch(ui.companionStart, JianquDimensions.companionRadiusDp, ui.accentSoftBorder)
             contentDescription = "小暖，进入本地模拟陪伴交互"
             isClickable = true
             isFocusable = true
@@ -301,14 +295,14 @@ class LauncherActivity : Activity() {
         val orb = companionOrb(this)
         tile.addView(orb, LinearLayout.LayoutParams(dp(if (landscape) 58 else 70), dp(if (landscape) 58 else 70)))
         val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        copy.addView(text("小暖", if (landscape) JianquTypography.headingCompactSp else JianquTypography.headingLargeSp, ink, true))
+        copy.addView(JianquTypography.display(this, "小暖", if (landscape) 25f else 29f, ink))
         copy.addView(text("想聊聊天，还是一起做点什么？", if (landscape) 13f else 14f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         copy.addView(text("本地模拟体验 · 非真实 AI", 12f, terracotta),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         tile.addView(copy, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
         tile.addView(text("›", 35f, terracotta))
-        body.addView(tile, LinearLayout.LayoutParams(-1, dp(if (landscape) 98 else 118)))
+        body.addView(tile, LinearLayout.LayoutParams(-1, dp(if (landscape) 98 else 108)))
     }
 
     private fun buildQuickActions(body: LinearLayout) {
@@ -319,11 +313,11 @@ class LauncherActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL
             }
             group.forEachIndexed { index, item ->
-                row.addView(makeQuickAction(item), LinearLayout.LayoutParams(0, dp(if (landscape) 88 else 87), 1f).apply {
-                    if (index > 0) leftMargin = dp(9)
+                row.addView(makeQuickAction(item), LinearLayout.LayoutParams(0, dp(if (landscape) 84 else 74), 1f).apply {
+                    if (index > 0) leftMargin = dp(8)
                 })
             }
-            body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(9) })
+            body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
     }
 
@@ -332,7 +326,7 @@ class LauncherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(if (landscape) 7 else 11), dp(6), dp(4), dp(6))
-            background = touch(ui.surface, JianquDimensions.cardRadiusDp, divider)
+            background = touch(ui.surface, JianquDimensions.tileRadiusDp, divider)
             isClickable = true
             isFocusable = true
             contentDescription = action.title
@@ -345,10 +339,10 @@ class LauncherActivity : Activity() {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }, FrameLayout.LayoutParams(
-                dp(if (landscape) 32 else 36), dp(if (landscape) 32 else 36), Gravity.CENTER
+                dp(if (landscape) 30 else 32), dp(if (landscape) 30 else 32), Gravity.CENTER
             ))
-            addView(iconBox, LinearLayout.LayoutParams(dp(if (landscape) 44 else 54), dp(if (landscape) 44 else 54)))
-            addView(text(action.title, if (landscape) 14f else 16f, ink, true),
+            addView(iconBox, LinearLayout.LayoutParams(dp(if (landscape) 42 else 46), dp(if (landscape) 42 else 46)))
+            addView(text(action.title, if (landscape) 15f else 17f, ink, true),
                 LinearLayout.LayoutParams(-1, -2).apply { leftMargin = dp(if (landscape) 7 else 10) })
             setOnClickListener { openQuickAction(action.destination, action.title) }
         }
@@ -372,7 +366,7 @@ class LauncherActivity : Activity() {
         row.addView(text("  紧急求助", 17f, ui.danger, true),
             LinearLayout.LayoutParams(0, -2, 1f))
         row.addView(text("原型未接入  ›", 12f, ui.danger))
-        root.addView(row, LinearLayout.LayoutParams(-1, dp(65)).apply { topMargin = dp(6) })
+        root.addView(row, LinearLayout.LayoutParams(-1, dp(60)).apply { topMargin = dp(6) })
     }
 
     private fun openQuickAction(destination: QuickActionDestination, name: String) {
@@ -421,9 +415,9 @@ class LauncherActivity : Activity() {
             isFocusable = true
             setOnClickListener { showHome() }
         }, LinearLayout.LayoutParams(-1, dp(48)))
-        root.addView(text("设置", 30f, ink, true), LinearLayout.LayoutParams(-1, dp(53)))
-        root.addView(text("管理本机桌面，系统设置由 Android 负责。", 14f, muted),
-            LinearLayout.LayoutParams(-1, dp(38)))
+        root.addView(JianquTypography.display(this, "设置", JianquTypography.pageTitleSp, ink), LinearLayout.LayoutParams(-1, dp(58)))
+        root.addView(text("管理本机桌面与系统设置", 16f, muted),
+            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) })
 
         val scroll = ScrollView(this).apply { isFillViewport = true }
         val content = LinearLayout(this).apply {
@@ -433,38 +427,48 @@ class LauncherActivity : Activity() {
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        content.addView(text("桌面偏好", 17f, ink, true),
-            LinearLayout.LayoutParams(-1, dp(38)))
+        val preferences = settingsGroup(content, "桌面偏好")
         val city = WeatherCity.current(this)
-        addSettingsItem(content, "天气城市",
+        addSettingsItem(preferences, "天气城市",
             if (city.isEmpty()) "尚未选择城市 · 不读取设备定位" else "$city · 点击更换") {
             showCityDialog()
         }
-        addSettingsItem(content, "Wi-Fi 与网络", "打开 Android 的网络设置") {
+        addSettingsItem(preferences, "Wi-Fi 与网络", "打开 Android 的网络设置") {
             openAndroidSettings(Settings.ACTION_WIFI_SETTINGS)
         }
-        addSettingsItem(content, "屏幕与亮度", "打开 Android 的显示设置") {
+        addSettingsItem(preferences, "屏幕与亮度", "打开 Android 的显示设置") {
             openAndroidSettings(Settings.ACTION_DISPLAY_SETTINGS)
         }
-        addSettingsItem(content, "默认主屏幕", "选择或更改 Android HOME 应用") {
+        addSettingsItem(preferences, "默认主屏幕", "选择或更改 Android HOME 应用") {
             openAndroidSettings(Settings.ACTION_HOME_SETTINGS)
         }
 
-        content.addSpace(12)
-        content.addView(text("了解设备", 17f, ink, true),
-            LinearLayout.LayoutParams(-1, dp(40)))
-        addSettingsItem(content, "首次使用与帮助", "默认桌面、全部应用与安全提示") {
+        content.addSpace(20)
+        val device = settingsGroup(content, "了解设备")
+        addSettingsItem(device, "首次使用与帮助", "默认桌面、全部应用与安全提示") {
             showHelp()
         }
         val version = runCatching {
             packageManager.getPackageInfo(packageName, 0).versionName
         }.getOrNull() ?: "未知"
-        addSettingsItem(content, "关于闺蜜机", "版本 $version · 原型演示") {
+        addSettingsItem(device, "关于闺蜜机", "版本 $version · 原型演示") {
             AlertDialog.Builder(this)
                 .setTitle("闺蜜机（演示）")
                 .setMessage("版本 $version\n普通第三方 Android Launcher。本期小暖和设备订阅为本地模拟，其他服务需分别接入。")
                 .setPositiveButton("知道了", null)
                 .show()
+        }
+    }
+
+    private fun settingsGroup(parent: LinearLayout, title: String): LinearLayout {
+        parent.addView(JianquTypography.display(this, title, JianquTypography.sectionSp, ink),
+            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = shape(ui.surface, JianquDimensions.cardRadiusDp, divider)
+            setPadding(dp(1), dp(1), dp(1), dp(1))
+            clipToOutline = true
+            parent.addView(this, LinearLayout.LayoutParams(-1, -2))
         }
     }
 
@@ -474,25 +478,28 @@ class LauncherActivity : Activity() {
         description: String,
         action: () -> Unit
     ) {
+        if (container.childCount > 0) {
+            container.addView(View(this).apply { setBackgroundColor(divider) },
+                LinearLayout.LayoutParams(-1, dp(1)).apply { leftMargin = dp(18); rightMargin = dp(18) })
+        }
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(11), dp(15), dp(11))
-            background = touch(ui.surface, 14, divider)
+            minimumHeight = dp(76)
+            setPadding(dp(18), dp(12), dp(18), dp(12))
+            background = touch(ui.surface, 0)
             isClickable = true
             isFocusable = true
             contentDescription = "$title，$description"
             setOnClickListener { action() }
         }
         val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        copy.addView(text(title, 17f, ink, true))
-        copy.addView(text(description, 13f, muted),
+        copy.addView(text(title, 18f, ink, true))
+        copy.addView(text(description, 14f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
         row.addView(text("›", 26f, muted))
-        container.addView(row, LinearLayout.LayoutParams(-1, dp(78)).apply {
-            bottomMargin = dp(9)
-        })
+        container.addView(row, LinearLayout.LayoutParams(-1, -2))
     }
 
     private fun showCityDialog() = WeatherCity.showPicker(this) { showSettings() }
@@ -519,7 +526,7 @@ class LauncherActivity : Activity() {
             isFocusable = true
             setOnClickListener { showSettings() }
         }, LinearLayout.LayoutParams(-1, dp(49)))
-        root.addView(text("首次使用与帮助", 28f, ink, true),
+        root.addView(JianquTypography.display(this, "首次使用与帮助", JianquTypography.pageTitleSp, ink),
             LinearLayout.LayoutParams(-1, dp(70)))
         val scroll = ScrollView(this)
         val items = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -580,11 +587,13 @@ class LauncherActivity : Activity() {
             setOnClickListener { showHome() }
         }
         root.addView(back, LinearLayout.LayoutParams(-1, dp(48)))
-        root.addView(text("全部应用", 30f, ink, true), LinearLayout.LayoutParams(-1, dp(56)))
+        root.addView(JianquTypography.display(this, "全部应用", JianquTypography.pageTitleSp, ink), LinearLayout.LayoutParams(-1, dp(58)))
         installedApps = emptyList()
         val searchRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            background = shape(ui.surface, JianquDimensions.cardRadiusDp, divider)
+            setPadding(dp(1), 0, dp(4), 0)
         }
         searchInput = EditText(this).apply {
             hint = "搜索已安装应用"
@@ -594,8 +603,8 @@ class LauncherActivity : Activity() {
             setHintTextColor(muted)
             inputType = InputType.TYPE_CLASS_TEXT
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            background = shape(ui.surface, 14, divider)
-            setPadding(dp(14), dp(5), dp(10), dp(5))
+            background = null
+            setPadding(dp(17), dp(5), dp(10), dp(5))
             contentDescription = "搜索已安装应用"
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -617,12 +626,12 @@ class LauncherActivity : Activity() {
             isFocusable = true
             setOnClickListener { searchInput.text.clear() }
         }, LinearLayout.LayoutParams(dp(58), dp(52)))
-        root.addView(searchRow, LinearLayout.LayoutParams(-1, dp(65)))
+        root.addView(searchRow, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(8); bottomMargin = dp(6) })
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        header.addView(text("设备上可启动的应用", 15f, muted),
+        header.addView(text("已安装应用", 16f, ink, true),
             LinearLayout.LayoutParams(0, dp(46), 1f))
         appCount = text("正在读取…", 14f, muted)
         header.addView(appCount)
@@ -695,8 +704,8 @@ class LauncherActivity : Activity() {
             val box = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                background = touch(ui.surface, 14)
-                setPadding(dp(6), dp(12), dp(6), dp(7))
+                background = touch(ui.background, JianquDimensions.tileRadiusDp)
+                setPadding(dp(6), dp(8), dp(6), dp(6))
                 contentDescription = "打开 " + entry.label
                 isClickable = true
                 isFocusable = true
@@ -707,7 +716,7 @@ class LauncherActivity : Activity() {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 contentDescription = null
             }, LinearLayout.LayoutParams(dp(60), dp(60)))
-            box.addView(text(entry.label.toString(), 15f, ink).apply {
+            box.addView(text(entry.label.toString(), 16f, ink).apply {
                 gravity = Gravity.CENTER
                 maxLines = 2
                 ellipsize = TextUtils.TruncateAt.END
@@ -715,7 +724,7 @@ class LauncherActivity : Activity() {
             }, LinearLayout.LayoutParams(-1, dp(49)))
             catalog.addView(box, GridLayout.LayoutParams().apply {
                 width = cell
-                height = dp(140)
+                height = dp(124)
                 setMargins(0, 0, dp(10), dp(10))
             })
         }
