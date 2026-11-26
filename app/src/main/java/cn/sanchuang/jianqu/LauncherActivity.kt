@@ -367,20 +367,28 @@ class LauncherActivity : Activity() {
             isFocusable = true
             setOnClickListener { openWeather() }
         }
-        summary.addView(clock, LinearLayout.LayoutParams(0, -2, 1f))
-        val weather = homeColumn().apply { gravity = Gravity.CENTER_HORIZONTAL }
+        clock.gravity = Gravity.BOTTOM
+        summary.addView(clock, LinearLayout.LayoutParams(0, -1, 1f))
+        val weather = homeColumn().apply {
+            gravity = Gravity.CENTER_HORIZONTAL or if (forecast != null) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
+        }
         if (forecast != null) {
-            weather.addView(homeIcon(weatherIcon(forecast.days.first().symbol)), LinearLayout.LayoutParams(dp(46), dp(46)))
-            weather.addView(text("${forecast.nearTemperature}°C", 25f, ink, true).apply { gravity = Gravity.CENTER })
+            weather.addView(homeIcon(weatherIcon(forecast.days.first().symbol)),
+                LinearLayout.LayoutParams(dp(64), dp(64)))
         }
         val label = when {
             place == null -> "选择城市"
             !WeatherData.consented(this) -> "${place.name} · 启用天气"
             forecast == null -> "${place.name} · 查询天气"
-            else -> "${place.name} · ${forecast.days.first().symbol}"
+            else -> "${place.name} · ${forecast.days.first().symbol} · ${forecast.nearTemperature}°C"
         }
-        weather.addView(text(label, 13f, muted).apply { gravity = Gravity.CENTER; maxLines = 2 })
-        summary.addView(weather, LinearLayout.LayoutParams(0, -2, 0.85f))
+        weather.addView(text(label, 14f, muted).apply {
+            gravity = Gravity.CENTER
+            maxLines = if (forecast != null) 1 else 2
+            if (forecast != null) setAutoSizeTextTypeUniformWithConfiguration(
+                11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+        }, LinearLayout.LayoutParams(-1, -2))
+        summary.addView(weather, LinearLayout.LayoutParams(0, -1, 0.85f))
         body.addView(summary, LinearLayout.LayoutParams(-1, -2))
 
     }
