@@ -404,7 +404,6 @@ class LauncherActivity : Activity() {
         talk.addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(32), dp(32)))
         talk.addView(text("和小暖聊聊吧…", 16f, ink), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
         tile.addView(talk, LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(12) })
-        tile.addView(text("本地模拟体验 · 非真实 AI", 12f, muted), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(6) })
         body.addView(tile, LinearLayout.LayoutParams(-1, -2))
     }
 
