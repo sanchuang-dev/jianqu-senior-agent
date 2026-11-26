@@ -453,10 +453,10 @@ class LauncherActivity : Activity() {
                 isFocusable = true
                 contentDescription = description
                 tooltipText = description
-                addView(homeIcon(resource), FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER))
+                addView(homeIcon(resource), FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
                 setOnClickListener { action() }
             }
-            header.addView(button, LinearLayout.LayoutParams(dp(48), dp(48)))
+            header.addView(button, LinearLayout.LayoutParams(dp(48), dp(48)).apply { leftMargin = dp(8) })
         }
         quickActions.filter { it.destination == QuickActionDestination.SETTINGS ||
             it.destination == QuickActionDestination.ALL_APPS }.forEach { item ->
