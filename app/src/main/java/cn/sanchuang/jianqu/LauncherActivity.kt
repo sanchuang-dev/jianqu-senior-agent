@@ -8,7 +8,6 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
-import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
@@ -48,6 +47,7 @@ import java.util.concurrent.RejectedExecutionException
  * until their independent JQ-005..011 contracts are implemented.
  */
 class LauncherActivity : Activity() {
+    private val ui = JianquColors(this)
     private enum class Page { HOME, ALL_APPS, SETTINGS, HELP }
 
     private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, STOREFRONT, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
@@ -59,11 +59,11 @@ class LauncherActivity : Activity() {
         val destination: QuickActionDestination
     )
 
-    private val backgroundColor = LauncherUiTokens.background
-    private val ink = LauncherUiTokens.ink
-    private val muted = LauncherUiTokens.muted
-    private val terracotta = LauncherUiTokens.terracotta
-    private val divider = LauncherUiTokens.divider
+    private val backgroundColor get() = ui.background
+    private val ink get() = ui.ink
+    private val muted get() = ui.muted
+    private val terracotta get() = ui.accentStrong
+    private val divider get() = ui.border
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var apps: LauncherApps
@@ -78,18 +78,18 @@ class LauncherActivity : Activity() {
     private var restoreHomeOnResume = false
     private var returningFromWeather = false
 
-    private val quickActions = listOf(
-        QuickAction("家人通话", R.drawable.ic_home_video_camera, LauncherUiTokens.familyCallIcon, QuickActionDestination.FAMILY_CALL),
-        QuickAction("家庭相册", R.drawable.ic_home_images, LauncherUiTokens.albumIcon, QuickActionDestination.CONTENT_ALBUM),
-        QuickAction("影视节目", R.drawable.ic_home_film_strip, LauncherUiTokens.videoIcon, QuickActionDestination.CONTENT_VIDEO),
-        QuickAction("本地生活", R.drawable.ic_home_shopping_bag_open, LauncherUiTokens.storeIcon, QuickActionDestination.STOREFRONT),
-        QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, LauncherUiTokens.musicIcon, QuickActionDestination.CONTENT_MUSIC),
-        QuickAction("健康中心", R.drawable.ic_home_stethoscope, LauncherUiTokens.healthIcon, QuickActionDestination.CONTENT_HEALTH),
-        QuickAction("建政栏目", R.drawable.ic_home_newspaper, LauncherUiTokens.newsIcon, QuickActionDestination.CONTENT_NEWS),
-        QuickAction("我的服务", R.drawable.ic_home_hand_heart, Color.rgb(248, 231, 227), QuickActionDestination.SERVICES),
-        QuickAction("设置", R.drawable.ic_home_gear, Color.rgb(235, 235, 235), QuickActionDestination.SETTINGS),
-        QuickAction("全部应用", R.drawable.ic_home_squares_four, Color.rgb(230, 227, 245), QuickActionDestination.ALL_APPS)
-    )
+    private val quickActions by lazy { listOf(
+        QuickAction("家人通话", R.drawable.ic_home_video_camera, ui.familyCallIcon, QuickActionDestination.FAMILY_CALL),
+        QuickAction("家庭相册", R.drawable.ic_home_images, ui.albumIcon, QuickActionDestination.CONTENT_ALBUM),
+        QuickAction("影视节目", R.drawable.ic_home_film_strip, ui.videoIcon, QuickActionDestination.CONTENT_VIDEO),
+        QuickAction("本地生活", R.drawable.ic_home_shopping_bag_open, ui.storeIcon, QuickActionDestination.STOREFRONT),
+        QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, ui.musicIcon, QuickActionDestination.CONTENT_MUSIC),
+        QuickAction("健康中心", R.drawable.ic_home_stethoscope, ui.healthIcon, QuickActionDestination.CONTENT_HEALTH),
+        QuickAction("建政栏目", R.drawable.ic_home_newspaper, ui.newsIcon, QuickActionDestination.CONTENT_NEWS),
+        QuickAction("我的服务", R.drawable.ic_home_hand_heart, ui.servicesIcon, QuickActionDestination.SERVICES),
+        QuickAction("设置", R.drawable.ic_home_gear, ui.settingsIcon, QuickActionDestination.SETTINGS),
+        QuickAction("全部应用", R.drawable.ic_home_squares_four, ui.allAppsIcon, QuickActionDestination.ALL_APPS)
+    ) }
 
     private val packageCallback = object : LauncherApps.Callback() {
         override fun onPackageAdded(packageName: String, user: UserHandle) = refreshApps()
@@ -161,24 +161,17 @@ class LauncherActivity : Activity() {
     private val landscape get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     private fun shape(color: Int, radius: Int, stroke: Int? = null): GradientDrawable =
-        LauncherUiTokens.shape(this, color, radius, stroke)
+        JianquDrawables.shape(this, color, radius, stroke)
 
     private fun touch(color: Int, radius: Int, border: Int? = null): RippleDrawable =
-        LauncherUiTokens.touch(this, color, radius, border)
+        JianquDrawables.touch(this, color, radius, border)
 
     private fun text(
         value: String,
         size: Float,
         color: Int = ink,
         bold: Boolean = false
-    ): TextView = TextView(this).apply {
-        this.text = value
-        textSize = size
-        setTextColor(color)
-        if (bold) setTypeface(null, Typeface.BOLD)
-        gravity = Gravity.CENTER_VERTICAL
-        includeFontPadding = false
-    }
+    ): TextView = JianquTypography.text(this, value, size, color, bold)
 
     private fun LinearLayout.addSpace(height: Int) {
         addView(View(context), LinearLayout.LayoutParams(1, dp(height)))
@@ -289,12 +282,11 @@ class LauncherActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(18), dp(13), dp(16), dp(13))
-            background = RippleDrawable(
-                ColorStateList.valueOf(Color.argb(35, 120, 70, 55)),
+            background = JianquDrawables.ripple(this@LauncherActivity,
                 GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(LauncherUiTokens.companionStart, LauncherUiTokens.companionEnd)).apply {
-                    cornerRadius = dp(LauncherUiTokens.companionRadiusDp).toFloat()
-                }, null
+                    intArrayOf(ui.companionStart, ui.companionEnd)).apply {
+                    cornerRadius = dp(JianquDimensions.companionRadiusDp).toFloat()
+                }
             )
             contentDescription = "小暖，进入本地模拟陪伴交互"
             isClickable = true
@@ -306,10 +298,10 @@ class LauncherActivity : Activity() {
                 )
             }
         }
-        val orb = LauncherUiTokens.companionOrb(this)
+        val orb = companionOrb(this)
         tile.addView(orb, LinearLayout.LayoutParams(dp(if (landscape) 58 else 70), dp(if (landscape) 58 else 70)))
         val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        copy.addView(text("小暖", if (landscape) LauncherUiTokens.headingCompactSp else LauncherUiTokens.headingLargeSp, ink, true))
+        copy.addView(text("小暖", if (landscape) JianquTypography.headingCompactSp else JianquTypography.headingLargeSp, ink, true))
         copy.addView(text("想聊聊天，还是一起做点什么？", if (landscape) 13f else 14f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         copy.addView(text("本地模拟体验 · 非真实 AI", 12f, terracotta),
@@ -340,12 +332,12 @@ class LauncherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(if (landscape) 7 else 11), dp(6), dp(4), dp(6))
-            background = touch(LauncherUiTokens.surface, LauncherUiTokens.cardRadiusDp, divider)
+            background = touch(ui.surface, JianquDimensions.cardRadiusDp, divider)
             isClickable = true
             isFocusable = true
             contentDescription = action.title
             val iconBox = FrameLayout(this@LauncherActivity).apply {
-                background = shape(action.color, LauncherUiTokens.iconWellRadiusDp)
+                background = shape(action.color, JianquDimensions.iconWellRadiusDp)
             }
             iconBox.addView(ImageView(this@LauncherActivity).apply {
                 setImageResource(action.iconRes)
@@ -367,7 +359,7 @@ class LauncherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), 0, dp(16), 0)
-            background = touch(Color.rgb(253, 234, 229), 16, Color.rgb(244, 209, 199))
+            background = touch(ui.dangerSurface, 16, ui.dangerBorder)
             isClickable = true
             isFocusable = true
             contentDescription = "SOS 紧急求助，当前为未接入真实求救功能的原型"
@@ -375,11 +367,11 @@ class LauncherActivity : Activity() {
                 startActivity(Intent(this@LauncherActivity, SosActivity::class.java))
             }
         }
-        val icon = text("SOS", 17f, LauncherUiTokens.danger, true)
+        val icon = text("SOS", 17f, ui.danger, true)
         row.addView(icon)
-        row.addView(text("  紧急求助", 17f, Color.rgb(132, 52, 48), true),
+        row.addView(text("  紧急求助", 17f, ui.danger, true),
             LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(text("原型未接入  ›", 12f, Color.rgb(157, 80, 77)))
+        row.addView(text("原型未接入  ›", 12f, ui.danger))
         root.addView(row, LinearLayout.LayoutParams(-1, dp(65)).apply { topMargin = dp(6) })
     }
 
@@ -486,7 +478,7 @@ class LauncherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(11), dp(15), dp(11))
-            background = touch(Color.WHITE, 14, divider)
+            background = touch(ui.surface, 14, divider)
             isClickable = true
             isFocusable = true
             contentDescription = "$title，$description"
@@ -543,7 +535,7 @@ class LauncherActivity : Activity() {
             val block = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(17), dp(18), dp(17), dp(18))
-                background = shape(Color.WHITE, 14, divider)
+                background = shape(ui.surface, 14, divider)
             }
             block.addView(text(heading, 18f, ink, true))
             block.addView(text(detail, 15f, muted),
@@ -602,7 +594,7 @@ class LauncherActivity : Activity() {
             setHintTextColor(muted)
             inputType = InputType.TYPE_CLASS_TEXT
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            background = shape(Color.WHITE, 14, divider)
+            background = shape(ui.surface, 14, divider)
             setPadding(dp(14), dp(5), dp(10), dp(5))
             contentDescription = "搜索已安装应用"
             addTextChangedListener(object : TextWatcher {
@@ -703,7 +695,7 @@ class LauncherActivity : Activity() {
             val box = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                background = touch(Color.WHITE, 14)
+                background = touch(ui.surface, 14)
                 setPadding(dp(6), dp(12), dp(6), dp(7))
                 contentDescription = "打开 " + entry.label
                 isClickable = true
