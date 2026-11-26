@@ -253,12 +253,29 @@ class LauncherActivity : Activity() {
         setContentView(wallpaper)
         root.requestApplyInsets()
         val header = homeRow()
-        header.addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
-        header.addView(text("见趣 · 闺蜜机", 18f, ink, true),
-            LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
-        val developer = access.developerControl(this) { showHome() }
+        val brand = homeRow().apply {
+            minimumHeight = dp(48)
+            addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
+            addView(text("见趣 · 闺蜜机", 18f, ink, true),
+                LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
+        }
+        header.addView(brand, LinearLayout.LayoutParams(-2, -2))
+        header.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        val developer = access.developerAction(this) { showHome() }
         if (developer != null) {
-            header.addView(developer, LinearLayout.LayoutParams(dp(88), -2))
+            var taps = 0
+            var firstTap = 0L
+            brand.setOnClickListener {
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (taps == 0 || now - firstTap > 1500L) {
+                    firstTap = now
+                    taps = 0
+                }
+                if (++taps == 3) {
+                    taps = 0
+                    developer()
+                }
+            }
         } else if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
             header.addView(text("公开预览 · 租赁未接入", 12f, muted))
         }

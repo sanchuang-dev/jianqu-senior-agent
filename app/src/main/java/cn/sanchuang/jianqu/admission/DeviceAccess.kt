@@ -16,5 +16,6 @@ internal interface DeviceAccessSource {
     fun current(): DeviceAccess
     fun refresh(): DeviceAccess = current()
     fun checkout(): LeaseCheckout? = null
+    fun developerAction(activity: Activity, changed: () -> Unit): (() -> Unit)? = null
     fun developerControl(activity: Activity, changed: () -> Unit): View? = null
 }

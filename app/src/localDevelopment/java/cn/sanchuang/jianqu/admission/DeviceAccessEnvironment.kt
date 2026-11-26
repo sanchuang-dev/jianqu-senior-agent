@@ -36,8 +36,22 @@ private class LocalDeviceAccess(context: Context) : DeviceAccessSource {
         if (resetCheckout) localCheckout.reset()
     }
 
+    override fun developerAction(activity: Activity, changed: () -> Unit): () -> Unit = {
+        AlertDialog.Builder(activity)
+            .setTitle("设备租赁 · 开发场景")
+            .setSingleChoiceItems(scenarios.map { it.second }.toTypedArray(),
+                scenarios.indexOfFirst { it.first == current() }) { dialog, index ->
+                select(scenarios[index].first)
+                dialog.dismiss()
+                changed()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
     override fun developerControl(activity: Activity, changed: () -> Unit): View {
         val ui = JianquColors(activity)
+        val open = developerAction(activity, changed)
         return JianquTypography.text(activity, "开发调试", 14f, ui.accentStrong, true).apply {
             gravity = Gravity.CENTER
             minHeight = (48 * resources.displayMetrics.density + .5f).toInt()
@@ -45,18 +59,7 @@ private class LocalDeviceAccess(context: Context) : DeviceAccessSource {
             isClickable = true
             isFocusable = true
             contentDescription = "设备租赁开发调试"
-            setOnClickListener {
-                AlertDialog.Builder(activity)
-                    .setTitle("设备租赁 · 开发场景")
-                    .setSingleChoiceItems(scenarios.map { it.second }.toTypedArray(),
-                        scenarios.indexOfFirst { it.first == current() }) { dialog, index ->
-                        select(scenarios[index].first)
-                        dialog.dismiss()
-                        changed()
-                    }
-                    .setNegativeButton("取消", null)
-                    .show()
-            }
+            setOnClickListener { open() }
         }
     }
 }
