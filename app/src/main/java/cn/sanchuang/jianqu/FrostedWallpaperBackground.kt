@@ -1,4 +1,4 @@
-package cn.sanchuang.jianqu.admission
+package cn.sanchuang.jianqu
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -11,21 +11,24 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.content.res.Resources
 import android.view.View
-import cn.sanchuang.jianqu.JianquDimensions
-import cn.sanchuang.jianqu.R
 import kotlin.math.max
 
 /**
- * The gate has a static wallpaper. Sample its preblurred image in the same
+ * Desktop surfaces use static wallpapers. Sample its preblurred image in the same
  * center-crop coordinates as the root, rather than blurring any foreground views.
  * Works on Android 11 without a live backdrop filter or per-frame bitmap allocation.
  */
-internal class LeaseFrostedBackground(
+internal class FrostedWallpaperBackground(
     private val root: View,
-    private val panel: View
+    private val panel: View,
+    wallpaperRes: Int,
+    radiusDp: Int,
+    private val scrim: Int,
+    private val tint: Int,
+    private val edge: Int
 ) : Drawable() {
     private val resources = root.resources
-    private val bitmap = blurredWallpaper(resources)
+    private val bitmap = blurredWallpaper(resources, wallpaperRes)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val path = Path()
     private val rect = RectF()
@@ -33,10 +36,7 @@ internal class LeaseFrostedBackground(
     private val rootLocation = IntArray(2)
     private val panelLocation = IntArray(2)
     private val density = resources.displayMetrics.density
-    private val radius = JianquDimensions.companionRadiusDp * density
-    private val scrim = root.context.getColor(R.color.jq_lease_scrim)
-    private val tint = root.context.getColor(R.color.jq_lease_glass_tint)
-    private val edge = root.context.getColor(R.color.jq_lease_glass_edge)
+    private val radius = radiusDp * density
 
     override fun draw(canvas: Canvas) {
         if (root.width == 0 || root.height == 0 || bounds.isEmpty) return
@@ -70,12 +70,12 @@ internal class LeaseFrostedBackground(
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     companion object {
-        private var cached: Bitmap? = null
+        private val cache = mutableMapOf<Int, Bitmap>()
 
         @Synchronized
-        private fun blurredWallpaper(resources: Resources): Bitmap {
-            cached?.let { return it }
-            val source = BitmapFactory.decodeResource(resources, R.drawable.jq_daylight_background,
+        private fun blurredWallpaper(resources: Resources, wallpaperRes: Int): Bitmap {
+            cache[wallpaperRes]?.let { return it }
+            val source = BitmapFactory.decodeResource(resources, wallpaperRes,
                 BitmapFactory.Options().apply { inSampleSize = 8; inPreferredConfig = Bitmap.Config.ARGB_8888 })
             val w = source.width
             val h = source.height
@@ -88,7 +88,7 @@ internal class LeaseFrostedBackground(
                 blur(scratch, pixels, w, h, false)
             }
             source.recycle()
-            return Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888).also { cached = it }
+            return Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888).also { cache[wallpaperRes] = it }
         }
 
         private fun blur(input: IntArray, output: IntArray, w: Int, h: Int, horizontal: Boolean) {

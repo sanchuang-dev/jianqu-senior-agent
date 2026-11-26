@@ -213,8 +213,21 @@ class LauncherActivity : Activity() {
         scaleType = ImageView.ScaleType.FIT_CENTER
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
-    private fun homeSurface(radius: Int = JianquDimensions.companionRadiusDp) =
-        touch(getColor(R.color.jq_home_glass), radius, getColor(R.color.jq_home_glass_edge))
+    private class HomeGlass(private val wallpaper: View) {
+        private val panels = ArrayList<View>()
+
+        fun surface(panel: View, radius: Int = JianquDimensions.companionRadiusDp): RippleDrawable {
+            panels.add(panel)
+            val context = wallpaper.context
+            val content = FrostedWallpaperBackground(wallpaper, panel, R.drawable.jq_home_background,
+                radius, android.graphics.Color.TRANSPARENT, context.getColor(R.color.jq_home_glass),
+                context.getColor(R.color.jq_home_glass_edge))
+            return RippleDrawable(android.content.res.ColorStateList.valueOf(context.getColor(R.color.jq_ripple)),
+                content, JianquDrawables.shape(context, android.graphics.Color.WHITE, radius))
+        }
+
+        fun invalidate() = panels.forEach { it.invalidate() }
+    }
 
     private fun showHome() {
         if (!admit()) return
@@ -233,6 +246,8 @@ class LauncherActivity : Activity() {
             setPadding(dp(side), dp(10), dp(side), dp(10))
         }
         wallpaper.addView(root, FrameLayout.LayoutParams(-1, -1))
+        val glass = HomeGlass(wallpaper)
+        wallpaper.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> glass.invalidate() }
         desktopBars.apply(edgeToEdge = true)
         LauncherSystemBars.insetContent(root)
         setContentView(wallpaper)
@@ -256,24 +271,25 @@ class LauncherActivity : Activity() {
         }
         val body = homeColumn().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(4)) }
         scroll.addView(body)
+        scroll.setOnScrollChangeListener { _, _, _, _, _ -> glass.invalidate() }
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         if (landscape && resources.configuration.screenWidthDp >= 660) {
             val top = homeRow().apply { gravity = Gravity.CENTER_VERTICAL }
             val companion = homeColumn()
             val environment = homeColumn()
-            buildCompanion(companion)
-            buildEnvironment(environment)
+            buildCompanion(companion, glass)
+            buildEnvironment(environment, glass)
             top.addView(companion, LinearLayout.LayoutParams(0, -2, 1f))
             top.addView(environment, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
             body.addView(top, LinearLayout.LayoutParams(-1, -2))
         } else {
-            buildEnvironment(body)
+            buildEnvironment(body, glass)
             body.addSpace(10)
-            buildCompanion(body)
+            buildCompanion(body, glass)
         }
         body.addSpace(12)
-        buildQuickActions(body)
+        buildQuickActions(body, glass)
         buildSos(root)
     }
 
@@ -288,7 +304,7 @@ class LauncherActivity : Activity() {
         else -> 0
     }
 
-    private fun buildEnvironment(body: LinearLayout) {
+    private fun buildEnvironment(body: LinearLayout, glass: HomeGlass) {
         val place = WeatherCity.place(this)
         val forecast = place?.let { WeatherData.cached(this, it) }
         val clock = homeColumn()
@@ -313,7 +329,7 @@ class LauncherActivity : Activity() {
         }
         val summary = homeRow().apply {
             setPadding(dp(14), dp(10), dp(14), dp(10))
-            background = homeSurface()
+            background = glass.surface(this)
             contentDescription = "天气，查看七日预报"
             isFocusable = true
             setOnClickListener { openWeather() }
@@ -337,7 +353,7 @@ class LauncherActivity : Activity() {
 
     }
 
-    private fun buildCompanion(body: LinearLayout) {
+    private fun buildCompanion(body: LinearLayout, glass: HomeGlass) {
         val tile = homeColumn().apply {
             setPadding(dp(12), dp(8), dp(12), dp(8))
             gravity = Gravity.CENTER_VERTICAL
@@ -358,7 +374,7 @@ class LauncherActivity : Activity() {
         }
         tile.addView(JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 25f, ink))
         val talk = homeRow().apply {
-            background = homeSurface(24)
+            background = glass.surface(this, 24)
             setPadding(dp(12), 0, dp(12), 0)
         }
         talk.addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(32), dp(32)))
@@ -379,13 +395,13 @@ class LauncherActivity : Activity() {
         else -> 0
     }
 
-    private fun buildQuickActions(body: LinearLayout) {
+    private fun buildQuickActions(body: LinearLayout, glass: HomeGlass) {
         val width = resources.configuration.screenWidthDp
         val cols = if (landscape && width >= 800) 8 else if (width >= 480) 4 else 2
         quickActions.take(8).chunked(cols).forEach { group ->
             val row = homeRow()
             group.forEachIndexed { index, item ->
-                row.addView(makeQuickAction(item, false), LinearLayout.LayoutParams(0, dp(90), 1f).apply {
+                row.addView(makeQuickAction(item, false, glass), LinearLayout.LayoutParams(0, dp(90), 1f).apply {
                     if (index > 0) leftMargin = dp(8)
                 })
             }
@@ -393,18 +409,18 @@ class LauncherActivity : Activity() {
         }
         val utilities = homeRow().apply { gravity = Gravity.CENTER }
         quickActions.drop(8).forEachIndexed { index, item ->
-            utilities.addView(makeQuickAction(item, true), LinearLayout.LayoutParams(0, dp(48), 1f).apply {
+            utilities.addView(makeQuickAction(item, true, glass), LinearLayout.LayoutParams(0, dp(48), 1f).apply {
                 if (index > 0) leftMargin = dp(12)
             })
         }
         body.addView(utilities, LinearLayout.LayoutParams(-1, -2))
     }
 
-    private fun makeQuickAction(action: QuickAction, utility: Boolean): View =
+    private fun makeQuickAction(action: QuickAction, utility: Boolean, glass: HomeGlass): View =
         (if (utility) homeRow() else homeColumn()).apply {
             gravity = Gravity.CENTER
             setPadding(dp(3), dp(4), dp(3), dp(4))
-            background = homeSurface(if (utility) 24 else JianquDimensions.companionRadiusDp)
+            background = glass.surface(this, if (utility) 24 else JianquDimensions.companionRadiusDp)
             isFocusable = true
             contentDescription = action.title
             val size = if (utility) 30 else 48

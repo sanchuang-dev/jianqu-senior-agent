@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import cn.sanchuang.jianqu.FrostedWallpaperBackground
 import cn.sanchuang.jianqu.JianquColors
 import cn.sanchuang.jianqu.JianquIcons
 import cn.sanchuang.jianqu.R
@@ -113,7 +114,9 @@ internal class LeaseGateView(private val activity: Activity) {
             val padding = dp(if (wide) 18 else 20)
             setPadding(padding, padding, padding, padding)
         }
-        card.background = LeaseFrostedBackground(root, card)
+        card.background = FrostedWallpaperBackground(root, card, R.drawable.jq_daylight_background,
+            JianquDimensions.companionRadiusDp, activity.getColor(R.color.jq_lease_scrim),
+            activity.getColor(R.color.jq_lease_glass_tint), activity.getColor(R.color.jq_lease_glass_edge))
         scroll.setOnScrollChangeListener { _, _, _, _, _ -> card.invalidate() }
         root.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> card.invalidate() }
 
