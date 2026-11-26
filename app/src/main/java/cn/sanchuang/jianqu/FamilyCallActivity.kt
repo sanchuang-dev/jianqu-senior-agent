@@ -3,8 +3,6 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Bundle
@@ -24,6 +22,7 @@ import android.widget.TextView
  * the session, while in-place orientation changes only reflow the UI.
  */
 class FamilyCallActivity : Activity() {
+    private val ui = JianquColors(this)
     private enum class Screen { UNBOUND, CONTACTS, CONFIRM, RINGING, CONNECTED, FINISHED }
     private enum class EndReason { HUNG_UP, REFUSED, NO_ANSWER, OFFLINE, NO_CAMERA, PERMISSION_DENIED, CANCELED }
     private data class DemoContact(val title: String, val relation: String, val initial: String)
@@ -37,13 +36,13 @@ class FamilyCallActivity : Activity() {
     private var reason: EndReason? = null
     private var needsRedrawAfterBackground = false
 
-    private val bg = LauncherUiTokens.background
-    private val ink = LauncherUiTokens.ink
-    private val muted = LauncherUiTokens.muted
-    private val accent = LauncherUiTokens.terracotta
-    private val surface = LauncherUiTokens.surface
-    private val border = LauncherUiTokens.divider
-    private val danger = LauncherUiTokens.danger
+    private val bg get() = ui.background
+    private val ink get() = ui.ink
+    private val muted get() = ui.muted
+    private val accent get() = ui.accentStrong
+    private val surface get() = ui.surface
+    private val border get() = ui.border
+    private val danger get() = ui.danger
 
     private fun dp(n: Int) = (resources.displayMetrics.density * n + 0.5f).toInt()
     private fun wide() =
@@ -100,24 +99,17 @@ class FamilyCallActivity : Activity() {
     private fun shape(
         fill: Int = surface,
         outline: Boolean = false,
-        radius: Int = LauncherUiTokens.cardRadiusDp
+        radius: Int = JianquDimensions.cardRadiusDp
     ): GradientDrawable =
-        LauncherUiTokens.shape(this, fill, radius, if (outline) border else null)
+        JianquDrawables.shape(this, fill, radius, if (outline) border else null)
 
     private fun ripple(fill: Int = surface, outlined: Boolean = false): RippleDrawable =
-        LauncherUiTokens.touch(this, fill, LauncherUiTokens.cardRadiusDp, if (outlined) border else null)
+        JianquDrawables.touch(this, fill, JianquDimensions.cardRadiusDp, if (outlined) border else null)
 
     private fun text(value: String, size: Float, color: Int = ink, bold: Boolean = false): TextView =
-        TextView(this).apply {
-            this.text = value
-            textSize = size
-            setTextColor(color)
-            gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-            if (bold) setTypeface(null, Typeface.BOLD)
-        }
+        JianquTypography.text(this, value, size, color, bold)
 
-    private fun line(parent: LinearLayout, message: String, size: Float = 16f,
+    private fun line(parent: LinearLayout, message: String, size: Float = JianquTypography.bodySp,
                      color: Int = ink, bold: Boolean = false, space: Int = 10): TextView =
         text(message, size, color, bold).also {
             parent.addView(it, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(space) })
@@ -125,10 +117,10 @@ class FamilyCallActivity : Activity() {
 
     private fun button(label: String, primary: Boolean = false, negative: Boolean = false,
                        onClick: () -> Unit): TextView =
-        text(label, 16f, if (primary || negative) Color.WHITE else accent, true).apply {
+        text(label, 16f, if (negative) ui.onDanger else if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
             setPadding(dp(12), dp(10), dp(12), dp(10))
-            minHeight = dp(LauncherUiTokens.minActionHeightDp)
+            minHeight = dp(JianquDimensions.minActionHeightDp)
             background = ripple(
                 when {
                     negative -> danger
@@ -183,7 +175,7 @@ class FamilyCallActivity : Activity() {
 
     private fun identity(): LinearLayout = makePanel().apply {
         val icon = FrameLayout(this@FamilyCallActivity).apply {
-            background = shape(LauncherUiTokens.familyCallIcon, radius = LauncherUiTokens.iconWellRadiusDp)
+            background = shape(ui.familyCallIcon, radius = JianquDimensions.iconWellRadiusDp)
             contentDescription = "视频通话演示标志"
         }
         icon.addView(ImageView(this@FamilyCallActivity).apply {
@@ -195,7 +187,7 @@ class FamilyCallActivity : Activity() {
         addView(icon, LinearLayout.LayoutParams(dp(66), dp(66)))
 
         line(this, "家人通话 · 交互原型", 14f, accent, true, 16)
-        line(this, titleFor(), if (wide()) LauncherUiTokens.headingCompactSp else LauncherUiTokens.headingLargeSp, ink, true, 10)
+        line(this, titleFor(), if (wide()) JianquTypography.headingCompactSp else JianquTypography.headingLargeSp, ink, true, 10)
         line(this, explainFor(), 16f, muted, space = 13)
 
         if (screen != Screen.UNBOUND && contact != null) {
@@ -225,7 +217,7 @@ class FamilyCallActivity : Activity() {
             }
             row.addView(text(person.initial, 19f, accent, true).apply {
                 gravity = Gravity.CENTER
-                background = shape(LauncherUiTokens.familyCallIcon, radius = LauncherUiTokens.iconWellRadiusDp)
+                background = shape(ui.familyCallIcon, radius = JianquDimensions.iconWellRadiusDp)
             }, LinearLayout.LayoutParams(dp(50), dp(50)))
             val labels = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -341,7 +333,7 @@ class FamilyCallActivity : Activity() {
         }
         val back = text("‹", 35f, accent).apply {
             gravity = Gravity.CENTER
-            minHeight = dp(LauncherUiTokens.minActionHeightDp)
+            minHeight = dp(JianquDimensions.minActionHeightDp)
             contentDescription = "返回桌面"
             background = ripple(surface, outlined = true)
             isFocusable = true

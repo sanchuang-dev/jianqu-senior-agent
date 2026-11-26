@@ -3,11 +3,6 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
@@ -22,11 +17,12 @@ import java.util.Locale
 
 /** Real, opted-in MET Norway forecast. Weather works without device location or an API key. */
 class WeatherActivity : Activity() {
-    private val backgroundColor = Color.rgb(250, 248, 244)
-    private val ink = Color.rgb(48, 53, 53)
-    private val muted = Color.rgb(112, 119, 117)
-    private val accent = Color.rgb(159, 88, 69)
-    private val border = Color.rgb(235, 231, 225)
+    private val ui = JianquColors(this)
+    private val backgroundColor get() = ui.background
+    private val ink get() = ui.ink
+    private val muted get() = ui.muted
+    private val accent get() = ui.accentStrong
+    private val border get() = ui.border
     private var request: WeatherData.Request? = null
     private var currentPlace: WeatherCity.Place? = null
     private lateinit var results: LinearLayout
@@ -36,29 +32,15 @@ class WeatherActivity : Activity() {
 
     private fun dp(n: Int) = (resources.displayMetrics.density * n + 0.5f).toInt()
     private fun rounded(color: Int, radius: Int, outline: Int? = null) =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-            if (outline != null) setStroke(dp(1), outline)
-        }
-    private fun touch(color: Int, radius: Int) = RippleDrawable(
-        ColorStateList.valueOf(Color.argb(35, 128, 80, 62)),
-        rounded(color, radius), null
-    )
+        JianquDrawables.shape(this, color, radius, outline)
+    private fun touch(color: Int, radius: Int) = JianquDrawables.touch(this, color, radius)
     private fun label(value: String, size: Float, color: Int = ink, bold: Boolean = false) =
-        TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            if (bold) setTypeface(null, Typeface.BOLD)
-            gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-        }
+        JianquTypography.text(this, value, size, color, bold)
     private fun action(value: String, click: () -> Unit) = label(value, 16f, accent, true).apply {
         gravity = Gravity.CENTER
         isClickable = true
         isFocusable = true
-        background = touch(Color.rgb(248, 237, 227), 12)
+        background = touch(ui.accentSoft, 12)
         setOnClickListener { click() }
     }
 
@@ -133,7 +115,7 @@ class WeatherActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(14), dp(11), dp(12), dp(11))
-            background = rounded(Color.WHITE, 14, border)
+            background = rounded(ui.surface, 14, border)
         }
         cityRow.addView(label(
             if (place == null) "请选择城市" else place.name + " · 手动选择",
@@ -210,7 +192,7 @@ class WeatherActivity : Activity() {
         results.removeAllViews()
         results.addView(label(message, 17f, muted).apply {
             setPadding(dp(17), dp(19), dp(17), dp(19))
-            background = rounded(Color.WHITE, 13, border)
+            background = rounded(ui.surface, 13, border)
         })
     }
 
@@ -236,7 +218,7 @@ class WeatherActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(13), dp(7), dp(12), dp(7))
-                background = rounded(Color.WHITE, 13, border)
+                background = rounded(ui.surface, 13, border)
             }
             val date = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             date.addView(label(day.title, 17f, ink, true))

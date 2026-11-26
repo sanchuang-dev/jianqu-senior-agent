@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -73,10 +71,10 @@ class ContentGalleryActivity : Activity() {
     private var preview = PreviewState.IDLE
     private var returnFromBackground = false
 
-    private val ui = LauncherUiTokens
-    private val ink = LauncherUiTokens.ink
-    private val muted = LauncherUiTokens.muted
-    private val accent = LauncherUiTokens.terracotta
+    private val ui = JianquColors(this)
+    private val ink get() = ui.ink
+    private val muted get() = ui.muted
+    private val accent get() = ui.accentStrong
     private fun dp(x: Int) = (resources.displayMetrics.density * x + 0.5f).toInt()
     private fun wide() =
         resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
@@ -168,17 +166,10 @@ class ContentGalleryActivity : Activity() {
         else -> "事实和评论独立标注，来源与日期需审核。"
     }
 
-    private fun text(value: String, size: Float = 16f, color: Int = ink, bold: Boolean = false) =
-        TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-            if (bold) typeface = Typeface.DEFAULT_BOLD
-        }
+    private fun text(value: String, size: Float = JianquTypography.bodySp, color: Int = ink, bold: Boolean = false) =
+        JianquTypography.text(this, value, size, color, bold)
 
-    private fun line(parent: LinearLayout, message: String, size: Float = 16f,
+    private fun line(parent: LinearLayout, message: String, size: Float = JianquTypography.bodySp,
                      color: Int = ink, bold: Boolean = false, top: Int = 10): TextView {
         val view = text(message, size, color, bold)
         parent.addView(view, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
@@ -189,17 +180,17 @@ class ContentGalleryActivity : Activity() {
         orientation = LinearLayout.VERTICAL
         val pad = dp(if (wide()) 20 else 18)
         setPadding(pad, pad, pad, pad)
-        background = ui.shape(this@ContentGalleryActivity, ui.surface, ui.cardRadiusDp, ui.divider)
+        background = JianquDrawables.shape(this@ContentGalleryActivity, ui.surface, JianquDimensions.cardRadiusDp, ui.border)
     }
 
     private fun button(title: String, primary: Boolean = false, click: () -> Unit): TextView =
-        text(title, 16f, if (primary) Color.WHITE else accent, true).apply {
+        text(title, 16f, if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
-            minHeight = dp(ui.minActionHeightDp)
+            minHeight = dp(JianquDimensions.minActionHeightDp)
             setPadding(dp(12), dp(8), dp(12), dp(8))
-            background = ui.touch(this@ContentGalleryActivity,
-                if (primary) accent else ui.surface, ui.cardRadiusDp,
-                if (primary) null else ui.divider)
+            background = JianquDrawables.touch(this@ContentGalleryActivity,
+                if (primary) accent else ui.surface, JianquDimensions.cardRadiusDp,
+                if (primary) null else ui.border)
             isFocusable = true
             isClickable = true
             contentDescription = title
@@ -228,7 +219,7 @@ class ContentGalleryActivity : Activity() {
 
     private fun intro(): LinearLayout = card().apply {
         val iconBg = FrameLayout(this@ContentGalleryActivity).apply {
-            background = ui.shape(this@ContentGalleryActivity, accentColor(), ui.iconWellRadiusDp)
+            background = JianquDrawables.shape(this@ContentGalleryActivity, accentColor(), JianquDimensions.iconWellRadiusDp)
         }
         iconBg.addView(ImageView(this@ContentGalleryActivity).apply {
             setImageResource(iconResource())
@@ -237,7 +228,7 @@ class ContentGalleryActivity : Activity() {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }, FrameLayout.LayoutParams(dp(40), dp(40), Gravity.CENTER))
         addView(iconBg, LinearLayout.LayoutParams(dp(66), dp(66)))
-        line(this, title(), ui.headingLargeSp, ink, true, 14)
+        line(this, title(), JianquTypography.headingLargeSp, ink, true, 14)
         line(this, description(), 16f, muted, top = 12)
         line(this, "界面数据全部虚构 · 不代表资源已接通", 14f, accent, true, 19)
         if (section == ALBUM) {
@@ -258,7 +249,7 @@ class ContentGalleryActivity : Activity() {
     }
 
     private fun listPanel(): LinearLayout = card().apply {
-        line(this, "演示栏目", ui.headingCompactSp, ink, true, 0)
+        line(this, "演示栏目", JianquTypography.headingCompactSp, ink, true, 0)
         line(this, "请选择分类，点击条目查看共用详情页。", 15f, muted, top = 9)
         val chips = LinearLayout(this@ContentGalleryActivity).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -266,13 +257,13 @@ class ContentGalleryActivity : Activity() {
         }
         categories().forEachIndexed { index, name ->
             val active = selectedCategory == name
-            val chip = text(name, 15f, if (active) Color.WHITE else accent, active).apply {
+            val chip = text(name, 15f, if (active) ui.onAccent else accent, active).apply {
                 gravity = Gravity.CENTER
                 setPadding(dp(13), dp(6), dp(13), dp(6))
                 minHeight = dp(42)
-                background = ui.touch(this@ContentGalleryActivity,
-                    if (active) accent else ui.surface, ui.cardRadiusDp,
-                    if (active) null else ui.divider)
+                background = JianquDrawables.touch(this@ContentGalleryActivity,
+                    if (active) accent else ui.surface, JianquDimensions.cardRadiusDp,
+                    if (active) null else ui.border)
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { selectedCategory = name; draw() }
@@ -294,8 +285,8 @@ class ContentGalleryActivity : Activity() {
             val row = LinearLayout(this@ContentGalleryActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(14), dp(11), dp(14), dp(11))
-                background = ui.touch(this@ContentGalleryActivity, ui.background,
-                    ui.cardRadiusDp, ui.divider)
+                background = JianquDrawables.touch(this@ContentGalleryActivity, ui.background,
+                    JianquDimensions.cardRadiusDp, ui.border)
                 isClickable = true
                 isFocusable = true
                 contentDescription = "查看内容：${item.title}"
@@ -315,7 +306,7 @@ class ContentGalleryActivity : Activity() {
     private fun detailPanel(): LinearLayout = card().apply {
         val item = contentEntries().getOrNull(selectedItem) ?: return@apply
         line(this, "内容详情 · 共用模板", 14f, accent, true, 0)
-        line(this, item.title, ui.headingCompactSp, ink, true, 13)
+        line(this, item.title, JianquTypography.headingCompactSp, ink, true, 13)
         line(this, "分类：${item.category}   属性：${item.badge}", 16f, ink, top = 13)
         line(this, item.summary, 16f, muted, top = 13)
         line(this, "来源：${item.rights}", 14f, muted, top = 14)
@@ -334,15 +325,15 @@ class ContentGalleryActivity : Activity() {
     private fun previewPanel(): LinearLayout = card().apply {
         val item = contentEntries().getOrNull(selectedItem) ?: return@apply
         line(this, if (section == NEWS) "阅读界面（示意）" else "播放界面（示意）",
-            ui.headingCompactSp, ink, true, 0)
+            JianquTypography.headingCompactSp, ink, true, 0)
         line(this, item.title + " · ${item.category}", 16f, ink, top = 12)
         val previewBox = text(if (section == NEWS)
             "正文占位 · 不含真实新闻或评论文章\n\n来源与内容事实均未提供"
         else "无媒体画面 / 无音频数据\n不解码、不播放、不传输",
             18f, muted, false).apply {
             gravity = Gravity.CENTER
-            background = ui.shape(this@ContentGalleryActivity, ui.background,
-                ui.cardRadiusDp, ui.divider)
+            background = JianquDrawables.shape(this@ContentGalleryActivity, ui.background,
+                JianquDimensions.cardRadiusDp, ui.border)
             setPadding(dp(12), dp(14), dp(12), dp(14))
         }
         addView(previewBox, LinearLayout.LayoutParams(-1, dp(if (wide()) 140 else 220)).apply {
@@ -376,7 +367,7 @@ class ContentGalleryActivity : Activity() {
 
     private fun emptyPanel(offline: Boolean): LinearLayout = card().apply {
         line(this, if (offline) "模拟断网 · 内容暂不可用" else "暂无可用内容",
-            ui.headingCompactSp, ink, true, 0)
+            JianquTypography.headingCompactSp, ink, true, 0)
         line(this, if (offline)
             "这是手动切换的断网演示，不表示真实网络已断开。"
         else "没有已授权资源或内容源。不能以虚构片单充当真实播放服务。",
@@ -387,7 +378,7 @@ class ContentGalleryActivity : Activity() {
     private fun albumPanel(): LinearLayout = card().apply {
         when (screen) {
             Screen.ALBUM_GATE -> {
-                line(this, "家庭照片尚未接入", ui.headingCompactSp, ink, true, 0)
+                line(this, "家庭照片尚未接入", JianquTypography.headingCompactSp, ink, true, 0)
                 line(this, "相册来源未确定，也没有任何照片访问授权。", 16f, muted, top = 15)
                 line(this, "真实照片只应在本人授权、身份明确后打开；公共设备不能展示上一位使用者的私人相册。", 15f, muted, top = 13)
                 addButton(this, "体验抽象示例图集（非真实照片）", primary = true, top = 22) {
@@ -397,24 +388,24 @@ class ContentGalleryActivity : Activity() {
                 addButton(this, "模拟空图集") { go(Screen.ALBUM_EMPTY) }
             }
             Screen.ALBUM_DENIED -> {
-                line(this, "尚未获得照片授权", ui.headingCompactSp, ink, true, 0)
+                line(this, "尚未获得照片授权", JianquTypography.headingCompactSp, ink, true, 0)
                 line(this, "没有访问设备图库或任何家庭账户。本状态是演示，不代表已经弹出 Android 权限请求。", 16f, muted, top = 18)
                 addButton(this, "返回来源说明", primary = true, top = 22) { go(Screen.ALBUM_GATE) }
             }
             Screen.ALBUM_EMPTY -> {
-                line(this, "没有可展示的照片", ui.headingCompactSp, ink, true, 0)
+                line(this, "没有可展示的照片", JianquTypography.headingCompactSp, ink, true, 0)
                 line(this, "这里没有读取真实相册，空图集是手动选择的示意状态。", 16f, muted, top = 18)
                 addButton(this, "返回来源说明", primary = true, top = 22) { go(Screen.ALBUM_GATE) }
             }
             Screen.ALBUM_GALLERY -> {
-                line(this, "抽象示例图集", ui.headingCompactSp, ink, true, 0)
+                line(this, "抽象示例图集", JianquTypography.headingCompactSp, ink, true, 0)
                 line(this, "仅是三张无人物、无照片的示意相框。", 15f, muted, top = 9)
                 albumLabels.forEachIndexed { idx, label ->
                     val row = text("$label   ›", 17f, ink, true).apply {
                         setPadding(dp(18), dp(14), dp(18), dp(14))
                         minHeight = dp(68)
-                        background = ui.touch(this@ContentGalleryActivity,
-                            ui.background, ui.cardRadiusDp, ui.divider)
+                        background = JianquDrawables.touch(this@ContentGalleryActivity,
+                            ui.background, JianquDimensions.cardRadiusDp, ui.border)
                         isFocusable = true
                         isClickable = true
                         setOnClickListener { albumIndex = idx; go(Screen.ALBUM_VIEWER) }
@@ -432,7 +423,7 @@ class ContentGalleryActivity : Activity() {
         setBackgroundColor(ui.background)
         addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
         val pane = FrameLayout(this@ContentGalleryActivity).apply {
-            background = ui.shape(this@ContentGalleryActivity, ui.surface, ui.cardRadiusDp, ui.divider)
+            background = JianquDrawables.shape(this@ContentGalleryActivity, ui.surface, JianquDimensions.cardRadiusDp, ui.border)
             val label = text(
                 "◇\n${albumLabels[albumIndex]}\n\n抽象相框 · 非真实照片",
                 if (wide()) 28f else 24f, muted, true

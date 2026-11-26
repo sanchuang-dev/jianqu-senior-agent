@@ -2,8 +2,6 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.content.res.Configuration
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -24,14 +22,14 @@ class SosActivity : Activity() {
         NO_CONTACT, NO_RESPONSE, CANCELED
     }
 
-    private val ui = LauncherUiTokens
-    private val ink = ui.ink
-    private val muted = ui.muted
-    private val danger = ui.danger
-    private val accent = ui.terracotta
+    private val ui = JianquColors(this)
+    private val ink get() = ui.ink
+    private val muted get() = ui.muted
+    private val danger get() = ui.danger
+    private val accent get() = ui.accentStrong
 
-    private val warningBackground = Color.rgb(253, 234, 229)
-    private val warningBorder = Color.rgb(244, 209, 199)
+    private val warningBackground get() = ui.dangerSurface
+    private val warningBorder get() = ui.dangerBorder
     private var step = Step.INTRO
     private var redrawAfterBackground = false
 
@@ -83,18 +81,11 @@ class SosActivity : Activity() {
         render()
     }
 
-    private fun label(value: String, size: Float = 16f, color: Int = ink,
+    private fun label(value: String, size: Float = JianquTypography.bodySp, color: Int = ink,
                       bold: Boolean = false): TextView =
-        TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-            if (bold) setTypeface(null, Typeface.BOLD)
-        }
+        JianquTypography.text(this, value, size, color, bold)
 
-    private fun line(parent: LinearLayout, value: String, size: Float = 16f,
+    private fun line(parent: LinearLayout, value: String, size: Float = JianquTypography.bodySp,
                      color: Int = ink, bold: Boolean = false, marginTop: Int = 11): TextView =
         label(value, size, color, bold).also {
             parent.addView(it, LinearLayout.LayoutParams(-1, -2).apply {
@@ -104,15 +95,15 @@ class SosActivity : Activity() {
 
     private fun button(text: String, primary: Boolean = false,
                        onClick: () -> Unit): TextView =
-        label(text, 16f, if (primary) Color.WHITE else accent, true).apply {
+        label(text, 16f, if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
-            minHeight = dp(ui.minActionHeightDp)
+            minHeight = dp(JianquDimensions.minActionHeightDp)
             setPadding(dp(11), dp(9), dp(11), dp(9))
-            background = ui.touch(
+            background = JianquDrawables.touch(
                 this@SosActivity,
                 if (primary) accent else ui.surface,
-                ui.cardRadiusDp,
-                if (primary) null else ui.divider
+                JianquDimensions.cardRadiusDp,
+                if (primary) null else ui.border
             )
             isClickable = true
             isFocusable = true
@@ -130,22 +121,22 @@ class SosActivity : Activity() {
         orientation = LinearLayout.VERTICAL
         val padding = dp(if (wide()) 22 else 19)
         setPadding(padding, dp(21), padding, dp(22))
-        background = ui.shape(this@SosActivity, ui.surface,
-            ui.cardRadiusDp, ui.divider)
+        background = JianquDrawables.shape(this@SosActivity, ui.surface,
+            JianquDimensions.cardRadiusDp, ui.border)
     }
 
     private fun warning() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(17), dp(13), dp(17), dp(16))
-        background = ui.shape(this@SosActivity, warningBackground,
-            ui.cardRadiusDp, warningBorder)
+        background = JianquDrawables.shape(this@SosActivity, warningBackground,
+            JianquDimensions.cardRadiusDp, warningBorder)
         line(this, "SOS 当前不可用于真实求救", 20f, danger, true, 0)
         line(this, "未接入报警、护理站或家属通知。任何演示结果都不代表救助已经送达。",
             15f, danger, false, 9)
     }
 
     private fun guidance() = panel().apply {
-        line(this, "如果现在真的需要帮助", ui.headingCompactSp, ink, true, 0)
+        line(this, "如果现在真的需要帮助", JianquTypography.headingCompactSp, ink, true, 0)
         line(this, "立即呼叫附近的工作人员或其他在场的人。", 16f, ink, marginTop = 17)
         line(this, "请使用能够正常拨号的可靠电话，拨打所在地的急救电话。",
             16f, ink, marginTop = 13)
@@ -189,9 +180,9 @@ class SosActivity : Activity() {
                                firstResult: Step, second: String, secondResult: Step) {
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         row.addView(button(first) { navigate(firstResult) },
-            LinearLayout.LayoutParams(0, dp(ui.minActionHeightDp), 1f))
+            LinearLayout.LayoutParams(0, dp(JianquDimensions.minActionHeightDp), 1f))
         row.addView(button(second) { navigate(secondResult) },
-            LinearLayout.LayoutParams(0, dp(ui.minActionHeightDp), 1f).apply {
+            LinearLayout.LayoutParams(0, dp(JianquDimensions.minActionHeightDp), 1f).apply {
                 leftMargin = dp(9)
             })
         parent.addView(row, LinearLayout.LayoutParams(-1, -2).apply {
@@ -201,7 +192,7 @@ class SosActivity : Activity() {
 
     private fun process() = panel().apply {
         line(this, "原型演示 · 没有真实求助请求", 14f, danger, true, 0)
-        line(this, stepTitle(), ui.headingCompactSp, ink, true, 12)
+        line(this, stepTitle(), JianquTypography.headingCompactSp, ink, true, 12)
         line(this, stepMessage(), 16f, muted, marginTop = 16)
 
         when (step) {

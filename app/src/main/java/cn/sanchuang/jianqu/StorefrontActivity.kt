@@ -3,9 +3,6 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -16,40 +13,36 @@ import android.widget.TextView
 
 /** Shared visual shell for the two local, non-transactional service prototypes. */
 internal abstract class ServicePreviewActivity : Activity() {
-    protected val ui = LauncherUiTokens
+    protected val ui = JianquColors(this)
     protected fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
     protected fun wide() = resources.displayMetrics.widthPixels > resources.displayMetrics.heightPixels &&
         resources.displayMetrics.widthPixels / resources.displayMetrics.density >= 650f
-    protected fun text(value: String, size: Float = 16f, color: Int = ui.ink, bold: Boolean = false) =
-        TextView(this).apply {
-            text = value; textSize = size; setTextColor(color); includeFontPadding = false
-            gravity = Gravity.CENTER_VERTICAL
-            if (bold) setTypeface(null, Typeface.BOLD)
-        }
+    protected fun text(value: String, size: Float = JianquTypography.bodySp, color: Int = ui.ink, bold: Boolean = false) =
+        JianquTypography.text(this, value, size, color, bold)
     protected fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-    protected fun line(parent: LinearLayout, value: String, size: Float = 16f,
+    protected fun line(parent: LinearLayout, value: String, size: Float = JianquTypography.bodySp,
                        color: Int = ui.ink, bold: Boolean = false, top: Int = 8): TextView =
         text(value, size, color, bold).also { add(parent, it, top) }
     protected fun add(parent: LinearLayout, view: View, top: Int = 10) {
         parent.addView(view, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
     }
-    protected fun panel(color: Int = ui.surface, border: Int? = ui.divider) = column().apply {
+    protected fun panel(color: Int = ui.surface, border: Int? = ui.border) = column().apply {
         setPadding(dp(20), dp(19), dp(20), dp(20))
-        background = ui.shape(this@ServicePreviewActivity, color, 18, border)
+        background = JianquDrawables.shape(this@ServicePreviewActivity, color, 18, border)
     }
     protected fun action(parent: LinearLayout, title: String, desc: String, icon: Int, tint: Int,
                          color: Int = ui.ink, click: () -> Unit) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             minimumHeight = dp(74); setPadding(dp(12), dp(10), dp(12), dp(10))
-            background = ui.touch(this@ServicePreviewActivity, ui.surface, 14, ui.divider)
+            background = JianquDrawables.touch(this@ServicePreviewActivity, ui.surface, 14, ui.border)
             isClickable = true; isFocusable = true; contentDescription = "$title，$desc"
             setOnClickListener { click() }
         }
         row.addView(ImageView(this).apply {
             setImageResource(icon); scaleType = ImageView.ScaleType.FIT_CENTER
             setPadding(dp(10), dp(10), dp(10), dp(10))
-            background = ui.shape(this@ServicePreviewActivity, tint, 12)
+            background = JianquDrawables.shape(this@ServicePreviewActivity, tint, 12)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }, LinearLayout.LayoutParams(dp(48), dp(48)))
         val copy = column().apply {
@@ -66,9 +59,9 @@ internal abstract class ServicePreviewActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(8), dp(20), dp(8))
         }
-        bar.addView(text("‹", 35f, ui.terracotta, true).apply {
+        bar.addView(text("‹", 35f, ui.accentStrong, true).apply {
             gravity = Gravity.CENTER; contentDescription = "返回"; isClickable = true; isFocusable = true
-            background = ui.touch(this@ServicePreviewActivity, ui.surface, 14, ui.divider)
+            background = JianquDrawables.touch(this@ServicePreviewActivity, ui.surface, 14, ui.border)
             setOnClickListener { back() }
         }, LinearLayout.LayoutParams(dp(56), dp(56)))
         bar.addView(text(title, 24f, ui.ink, true), LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(13) })
@@ -100,13 +93,13 @@ internal class StorefrontActivity : ServicePreviewActivity() {
     override fun onResume() { super.onResume(); render() }
     override fun render() {
         val hero = panel(ui.storeIcon, null).apply {
-            line(this, "惠享 · 本地优惠", 18f, ui.terracotta, true, 0)
-            line(this, "9.9 折", 54f, ui.terracotta, true, 12)
+            line(this, "惠享 · 本地优惠", 18f, ui.accentStrong, true, 0)
+            line(this, "9.9 折", 54f, ui.accentStrong, true, 12)
             line(this, "本地生活专享优惠", 22f, ui.ink, true, 5)
             line(this, "示例权益 · 实际折扣待定", 13f, ui.muted, top = 10)
             val example = panel(ui.surface, null).apply {
                 line(this, "优惠购 · 价格示例", 14f, ui.muted, true, 0)
-                line(this, "¥100.00  →  ¥99.00", 25f, ui.terracotta, true, 8)
+                line(this, "¥100.00  →  ¥99.00", 25f, ui.accentStrong, true, 8)
                 line(this, "本次示例优惠 ¥1.00", 14f, ui.muted, top = 6)
             }
             add(this, example, 20)
@@ -117,13 +110,13 @@ internal class StorefrontActivity : ServicePreviewActivity() {
             categories.forEachIndexed { i, title ->
                 action(this, title, descriptions[i], R.drawable.ic_home_shopping_bag_open,
                     if (i == selected) ui.storeIcon else ui.albumIcon,
-                    if (i == selected) ui.terracotta else ui.ink) {
+                    if (i == selected) ui.accentStrong else ui.ink) {
                     selected = i
                     render()
                 }
             }
             val detail = panel(ui.surface).apply {
-                line(this, categories[selected], 19f, ui.terracotta, true, 0)
+                line(this, categories[selected], 19f, ui.accentStrong, true, 0)
                 line(this, listOf("订阅专享优惠商品，示例为 9.9 折。", "精选社区商品与便民服务。", "附近社区活动与生活福利。")[selected], 16f, top = 9)
                 line(this, "权益展示原型 · 暂不可购买", 13f, ui.muted, top = 9)
             }

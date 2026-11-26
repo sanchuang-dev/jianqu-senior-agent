@@ -1,7 +1,6 @@
 package cn.sanchuang.jianqu
 
 import android.content.Intent
-import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
@@ -14,7 +13,7 @@ internal class HealthCenterActivity : ServicePreviewActivity() {
     private val checked = mutableSetOf<Int>()
     private val rehabChecked = mutableSetOf<Int>()
     private var rehab = false
-    private val green = Color.rgb(63, 114, 81)
+    private val green get() = ui.success
     override fun onStop() {
         super.onStop()
         checked.clear()
@@ -31,7 +30,7 @@ internal class HealthCenterActivity : ServicePreviewActivity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             minimumHeight = dp(60); setPadding(dp(12), dp(8), dp(12), dp(8))
-            background = ui.touch(this@HealthCenterActivity, ui.surface, 12)
+            background = JianquDrawables.touch(this@HealthCenterActivity, ui.surface, 12)
             isClickable = true; isFocusable = true
             contentDescription = "$title，${if (done) "已完成" else "待打卡"}"
             setOnClickListener { toggle(); render() }
@@ -50,8 +49,8 @@ internal class HealthCenterActivity : ServicePreviewActivity() {
         val segments = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             for (i in 0 until total) addView(View(this@HealthCenterActivity).apply {
-                background = ui.shape(this@HealthCenterActivity,
-                    if (i < count) green else Color.rgb(205, 222, 205), 6)
+                background = JianquDrawables.shape(this@HealthCenterActivity,
+                    if (i < count) green else ui.successTrack, 6)
             }, LinearLayout.LayoutParams(0, dp(9), 1f).apply { if (i > 0) leftMargin = dp(5) })
         }
         add(parent, segments, 15)

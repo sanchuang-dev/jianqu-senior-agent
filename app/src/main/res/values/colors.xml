@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Daylight Living: ai-mirror web/assets/tokens.css; Android-specific state and icon tints below. -->
+    <color name="jq_background">#F5F6F8</color>
+    <color name="jq_surface">#FFFFFF</color>
+    <color name="jq_surface_secondary">#ECEFF3</color>
+    <color name="jq_ink">#1B1E23</color>
+    <color name="jq_muted">#5C6470</color>
+    <color name="jq_border">#E3E6EB</color>
+    <color name="jq_accent">#E4572E</color>
+    <color name="jq_accent_strong">#C9401B</color>
+    <color name="jq_on_accent">@color/jq_surface</color>
+    <color name="jq_accent_secondary">#1F9E8F</color>
+    <color name="jq_success">#0F7A6B</color>
+    <color name="jq_accent_soft">#FDE9E2</color>
+    <color name="jq_accent_soft_border">#F6D3C5</color>
+    <color name="jq_orb_core">#FFD9C9</color>
+    <color name="jq_orb_edge">@color/jq_accent</color>
+    <color name="jq_ripple">#24C9401B</color>
+    <color name="jq_danger">#9D322B</color>
+    <color name="jq_on_danger">@color/jq_on_accent</color>
+    <color name="jq_danger_surface">#FDEAE5</color>
+    <color name="jq_danger_border">#F4D1C7</color>
+    <color name="jq_family_call_icon">#E2F2ED</color>
+    <color name="jq_album_icon">#FBEDD9</color>
+    <color name="jq_video_icon">#E1ECF8</color>
+    <color name="jq_store_icon">@color/jq_accent_soft</color>
+    <color name="jq_music_icon">#F6E8F3</color>
+    <color name="jq_health_icon">#E5F2E2</color>
+    <color name="jq_news_icon">#E8ECF6</color>
+    <color name="jq_services_icon">@color/jq_accent_soft</color>
+    <color name="jq_settings_icon">@color/jq_surface_secondary</color>
+    <color name="jq_all_apps_icon">#E6E3F5</color>
+    <color name="jq_success_track">#CDDECD</color>
+    <color name="jq_companion_end">#FFF6EC</color>
+</resources>
