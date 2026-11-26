@@ -41,4 +41,8 @@
     <color name="jq_lease_glass_tint">#73FFFFFF</color>
     <color name="jq_lease_glass_edge">#E6FFFFFF</color>
     <color name="jq_lease_glass_choice">#A6FFFFFF</color>
+    <!-- HOME reference design; neutral fallback until the dedicated wallpaper is supplied. -->
+    <color name="jq_home_canvas">#F3E8DE</color>
+    <color name="jq_home_glass">#BFFFFFFF</color>
+    <color name="jq_home_glass_edge">#E6FFFFFF</color>
 </resources>

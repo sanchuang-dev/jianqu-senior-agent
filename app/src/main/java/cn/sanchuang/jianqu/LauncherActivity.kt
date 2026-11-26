@@ -3,7 +3,6 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.content.pm.LauncherActivityInfo
 import android.graphics.Typeface
@@ -202,206 +201,239 @@ class LauncherActivity : Activity() {
         ))
     }
 
+    private fun homeColumn() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+    private fun homeRow() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+    }
+    private fun homeIcon(resource: Int): ImageView = ImageView(this).apply {
+        if (resource != 0) setImageResource(resource)
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+    private fun homeSurface(radius: Int = JianquDimensions.companionRadiusDp) =
+        touch(getColor(R.color.jq_home_glass), radius, getColor(R.color.jq_home_glass_edge))
+
     private fun showHome() {
         if (!admit()) return
         page = Page.HOME
         renderedGateState = null
-        val side = if (landscape) 28 else 20
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(backgroundColor)
-            setPadding(dp(side), dp(if (landscape) 10 else 12), dp(side), dp(10))
+        val root = homeColumn().apply {
+            setBackgroundColor(getColor(R.color.jq_home_canvas))
+            val side = if (landscape) 20 else 16
+            setPadding(dp(side), dp(10), dp(side), dp(10))
         }
         setContentView(root)
-
+        val header = homeRow()
+        header.addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
+        header.addView(text("见趣 · 闺蜜机", 18f, ink, true),
+            LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
+        val developer = access.developerControl(this) { showHome() }
+        if (developer != null) {
+            header.addView(developer, LinearLayout.LayoutParams(dp(88), -2))
+        } else if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
+            header.addView(text("公开预览 · 租赁未接入", 12f, muted))
+        }
+        root.addView(header, LinearLayout.LayoutParams(-1, -2))
         val scroll = ScrollView(this).apply {
             clipToPadding = false
-            isFillViewport = false
+            isFillViewport = true
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             isVerticalScrollBarEnabled = false
         }
-        val body = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(2), 0, dp(2), dp(12))
-        }
+        val body = homeColumn().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(4)) }
         scroll.addView(body)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        buildEnvironment(body)
-        body.addSpace(if (landscape) 12 else 12)
-        buildCompanion(body)
-        body.addSpace(if (landscape) 12 else 12)
-
-        val section = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
+        if (landscape && resources.configuration.screenWidthDp >= 660) {
+            val top = homeRow().apply { gravity = Gravity.CENTER_VERTICAL }
+            val companion = homeColumn()
+            val environment = homeColumn()
+            buildCompanion(companion)
+            buildEnvironment(environment)
+            top.addView(companion, LinearLayout.LayoutParams(0, -2, 1f))
+            top.addView(environment, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
+            body.addView(top, LinearLayout.LayoutParams(-1, -2))
+        } else {
+            buildEnvironment(body)
+            body.addSpace(10)
+            buildCompanion(body)
         }
-        section.addView(JianquTypography.display(this, "常用功能", JianquTypography.sectionSp, ink), LinearLayout.LayoutParams(0, dp(34), 1f))
-        body.addView(section)
-        body.addSpace(4)
+        body.addSpace(12)
         buildQuickActions(body)
-        body.addSpace(4)
-
         buildSos(root)
     }
 
+    private fun weatherIcon(symbol: String): Int = when (symbol) {
+        "晴" -> R.drawable.jq_home_sunny
+        "多云间晴", "晴间多云" -> R.drawable.jq_home_partly_cloudy
+        "多云" -> R.drawable.jq_home_cloudy
+        "雨" -> R.drawable.jq_home_rain
+        "雷阵雨" -> R.drawable.jq_home_thunder
+        "雪" -> R.drawable.jq_home_snow
+        "雾" -> R.drawable.jq_home_fog
+        else -> 0
+    }
+
     private fun buildEnvironment(body: LinearLayout) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.TOP
-        }
-        // Date and weather form one left-aligned environment group.
-        // The right-hand area stays visually empty until artwork is supplied.
-        val environment = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-        environment.addView(TextClock(this).apply {
-            format12Hour = "hh:mm"
+        val place = WeatherCity.place(this)
+        val forecast = place?.let { WeatherData.cached(this, it) }
+        val clock = homeColumn()
+        clock.addView(TextClock(this).apply {
+            format12Hour = "HH:mm"
             format24Hour = "HH:mm"
-            textSize = if (landscape) 36f else 44f
+            textSize = if (landscape) 42f else 44f
             setTextColor(ink)
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            typeface = Typeface.create("serif", Typeface.NORMAL)
             includeFontPadding = false
         })
-        environment.addView(TextClock(this).apply {
+        clock.addView(TextClock(this).apply {
             format12Hour = "M月d日 EEEE"
             format24Hour = "M月d日 EEEE"
             textSize = 14f
             setTextColor(muted)
         })
-
-        val weatherPlace = WeatherCity.place(this)
-        val cachedWeather = weatherPlace?.let { WeatherData.cached(this, it) }
-        val weatherLabel = when {
-            weatherPlace == null -> "☁  选择城市  ›"
-            !WeatherData.consented(this) -> "☁  ${weatherPlace.name} · 启用天气  ›"
-            cachedWeather == null -> "☁  ${weatherPlace.name} · 查询天气  ›"
-            cachedWeather.stale ->
-                "☁  ${weatherPlace.name} · ${cachedWeather.nearTemperature}° · 缓存过期  ›"
-            else ->
-                "☁  ${weatherPlace.name} · ${cachedWeather.nearTemperature}° · ${cachedWeather.days.first().symbol}  ›"
+        fun openWeather() {
+            if (!admit()) return
+            returningFromWeather = true
+            startActivity(Intent(this, WeatherActivity::class.java))
         }
-        environment.addView(text(weatherLabel, if (landscape) 15f else 13f, terracotta).apply {
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-            gravity = Gravity.CENTER_VERTICAL
-            background = touch(backgroundColor, 12)
-            setPadding(dp(3), 0, dp(3), 0)
-            isClickable = true
-            isFocusable = true
+        val summary = homeRow().apply {
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = homeSurface()
             contentDescription = "天气，查看七日预报"
-            setOnClickListener {
-                if (!admit()) return@setOnClickListener
-                returningFromWeather = true
-                startActivity(Intent(this@LauncherActivity, WeatherActivity::class.java))
-            }
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
-
-        row.addView(environment, LinearLayout.LayoutParams(0, -2, 1f))
-        val developer = access.developerControl(this) { showHome() }
-        if (developer != null) {
-            row.addView(developer, LinearLayout.LayoutParams(dp(88), -2).apply { leftMargin = dp(8) })
-        } else if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
-            row.addView(text("公开预览\n租赁未接入", 12f, muted).apply { gravity = Gravity.END },
-                LinearLayout.LayoutParams(dp(86), -2))
-        } else {
-            row.addView(View(this), LinearLayout.LayoutParams(0, 1, 0.25f))
+            isFocusable = true
+            setOnClickListener { openWeather() }
         }
-        body.addView(row)
+        summary.addView(clock, LinearLayout.LayoutParams(0, -2, 1f))
+        val weather = homeColumn().apply { gravity = Gravity.CENTER_HORIZONTAL }
+        if (forecast != null) {
+            weather.addView(homeIcon(weatherIcon(forecast.days.first().symbol)), LinearLayout.LayoutParams(dp(46), dp(46)))
+            weather.addView(text("${forecast.nearTemperature}°C", 25f, ink, true).apply { gravity = Gravity.CENTER })
+        }
+        val label = when {
+            place == null -> "选择城市"
+            !WeatherData.consented(this) -> "${place.name} · 启用天气"
+            forecast == null -> "${place.name} · 查询天气"
+            forecast.stale -> "${place.name} · 缓存过期"
+            else -> "${place.name} · ${forecast.days.first().symbol}"
+        }
+        weather.addView(text(label, 13f, muted).apply { gravity = Gravity.CENTER; maxLines = 2 })
+        summary.addView(weather, LinearLayout.LayoutParams(0, -2, 0.85f))
+        body.addView(summary, LinearLayout.LayoutParams(-1, -2))
+        if (forecast != null) {
+            val days = homeRow().apply {
+                setPadding(dp(6), dp(7), dp(6), dp(7))
+                background = homeSurface()
+                isFocusable = true
+                contentDescription = "天气预报，查看七日详情"
+                setOnClickListener { openWeather() }
+            }
+            forecast.days.take(if (landscape) 6 else 4).forEachIndexed { index, day ->
+                val item = homeColumn().apply { gravity = Gravity.CENTER_HORIZONTAL }
+                item.addView(text(if (index == 0) "今天" else day.title.substringAfter(" "), 12f, muted).apply { gravity = Gravity.CENTER })
+                item.addView(homeIcon(weatherIcon(day.symbol)), LinearLayout.LayoutParams(dp(30), dp(30)))
+                item.addView(text("${day.high}°/${day.low}°", 12f, ink).apply { gravity = Gravity.CENTER })
+                days.addView(item, LinearLayout.LayoutParams(0, -2, 1f))
+            }
+            body.addView(days, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        }
     }
 
     private fun buildCompanion(body: LinearLayout) {
-        val tile = LinearLayout(this).apply {
+        val tile = homeColumn().apply {
+            setPadding(dp(12), dp(8), dp(12), dp(8))
             gravity = Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(18), dp(13), dp(16), dp(13))
-            background = touch(ui.companionStart, JianquDimensions.companionRadiusDp, ui.accentSoftBorder)
             contentDescription = "小暖，进入本地模拟陪伴交互"
-            isClickable = true
             isFocusable = true
             setOnClickListener {
                 if (!admit()) return@setOnClickListener
-                startActivity(
-                    Intent(this@LauncherActivity, DemoActivity::class.java)
-                        .putExtra(DemoActivity.EXTRA_OPEN_CHAT, true)
-                )
+                startActivity(Intent(this@LauncherActivity, DemoActivity::class.java)
+                    .putExtra(DemoActivity.EXTRA_OPEN_CHAT, true))
             }
         }
-        val orb = companionOrb(this)
-        tile.addView(orb, LinearLayout.LayoutParams(dp(if (landscape) 58 else 70), dp(if (landscape) 58 else 70)))
-        val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        copy.addView(JianquTypography.display(this, "小暖", if (landscape) 25f else 29f, ink))
-        copy.addView(text("想聊聊天，还是一起做点什么？", if (landscape) 13f else 14f, muted),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        copy.addView(text("本地模拟体验 · 非真实 AI", 12f, terracotta),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        tile.addView(copy, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
-        tile.addView(text("›", 35f, terracotta))
-        body.addView(tile, LinearLayout.LayoutParams(-1, dp(if (landscape) 98 else 108)))
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val greeting = when (hour) {
+            in 0..10 -> "早上好"
+            in 11..13 -> "中午好"
+            in 14..17 -> "下午好"
+            else -> "晚上好"
+        }
+        tile.addView(JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 25f, ink))
+        val talk = homeRow().apply {
+            background = homeSurface(24)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        talk.addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(32), dp(32)))
+        talk.addView(text("和小暖聊聊吧…", 16f, ink), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
+        tile.addView(talk, LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(12) })
+        tile.addView(text("本地模拟体验 · 非真实 AI", 12f, muted), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(6) })
+        body.addView(tile, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun homeActionIcon(action: QuickAction): Int = when (action.destination) {
+        QuickActionDestination.FAMILY_CALL -> R.drawable.jq_home_contacts
+        QuickActionDestination.CONTENT_ALBUM -> R.drawable.jq_home_album
+        QuickActionDestination.CONTENT_VIDEO -> R.drawable.jq_home_video
+        QuickActionDestination.STOREFRONT -> R.drawable.jq_home_shopping
+        QuickActionDestination.CONTENT_HEALTH -> R.drawable.jq_home_health
+        QuickActionDestination.SETTINGS -> R.drawable.jq_home_settings
+        QuickActionDestination.ALL_APPS -> R.drawable.jq_home_all_apps
+        else -> 0
     }
 
     private fun buildQuickActions(body: LinearLayout) {
-        val cols = if (landscape) 5 else 2
-        quickActions.chunked(cols).forEach { group ->
-            val row = LinearLayout(this).apply {
-                gravity = Gravity.CENTER_VERTICAL
-                orientation = LinearLayout.HORIZONTAL
-            }
+        val width = resources.configuration.screenWidthDp
+        val cols = if (landscape && width >= 800) 8 else if (width >= 480) 4 else 2
+        quickActions.take(8).chunked(cols).forEach { group ->
+            val row = homeRow()
             group.forEachIndexed { index, item ->
-                row.addView(makeQuickAction(item), LinearLayout.LayoutParams(0, dp(if (landscape) 84 else 74), 1f).apply {
+                row.addView(makeQuickAction(item, false), LinearLayout.LayoutParams(0, dp(90), 1f).apply {
                     if (index > 0) leftMargin = dp(8)
                 })
             }
             body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
+        val utilities = homeRow().apply { gravity = Gravity.CENTER }
+        quickActions.drop(8).forEachIndexed { index, item ->
+            utilities.addView(makeQuickAction(item, true), LinearLayout.LayoutParams(0, dp(48), 1f).apply {
+                if (index > 0) leftMargin = dp(12)
+            })
+        }
+        body.addView(utilities, LinearLayout.LayoutParams(-1, -2))
     }
 
-    private fun makeQuickAction(action: QuickAction): View {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(if (landscape) 7 else 11), dp(6), dp(4), dp(6))
-            background = touch(ui.surface, JianquDimensions.tileRadiusDp, divider)
-            isClickable = true
+    private fun makeQuickAction(action: QuickAction, utility: Boolean): View =
+        (if (utility) homeRow() else homeColumn()).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(3), dp(4), dp(3), dp(4))
+            background = homeSurface(if (utility) 24 else JianquDimensions.companionRadiusDp)
             isFocusable = true
             contentDescription = action.title
-            val iconBox = FrameLayout(this@LauncherActivity).apply {
-                background = shape(action.color, JianquDimensions.iconWellRadiusDp)
-            }
-            iconBox.addView(ImageView(this@LauncherActivity).apply {
-                setImageResource(action.iconRes)
-                imageTintList = ColorStateList.valueOf(ink)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, FrameLayout.LayoutParams(
-                dp(if (landscape) 30 else 32), dp(if (landscape) 30 else 32), Gravity.CENTER
-            ))
-            addView(iconBox, LinearLayout.LayoutParams(dp(if (landscape) 42 else 46), dp(if (landscape) 42 else 46)))
-            addView(text(action.title, if (landscape) 15f else 17f, ink, true),
-                LinearLayout.LayoutParams(-1, -2).apply { leftMargin = dp(if (landscape) 7 else 10) })
+            val size = if (utility) 30 else 48
+            addView(homeIcon(homeActionIcon(action)), LinearLayout.LayoutParams(dp(size), dp(size)))
+            addView(text(action.title, 15f, ink, true).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(if (utility) -2 else -1, -2).apply {
+                    if (utility) leftMargin = dp(8) else topMargin = dp(3)
+                })
             setOnClickListener { openQuickAction(action.destination, action.title) }
         }
-    }
 
     private fun buildSos(root: LinearLayout) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), 0, dp(16), 0)
-            background = touch(ui.dangerSurface, 16, ui.dangerBorder)
-            isClickable = true
+        val row = homeRow().apply {
+            gravity = Gravity.CENTER
+            background = touch(ui.dangerSurface, 20, ui.dangerBorder)
             isFocusable = true
             contentDescription = "SOS 紧急求助，当前为未接入真实求救功能的原型"
             setOnClickListener {
+                if (!admit()) return@setOnClickListener
                 startActivity(Intent(this@LauncherActivity, SosActivity::class.java))
             }
         }
-        val icon = text("SOS", 17f, ui.danger, true)
-        row.addView(icon)
-        row.addView(text("  紧急求助", 17f, ui.danger, true),
-            LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(text("原型未接入  ›", 12f, ui.danger))
-        root.addView(row, LinearLayout.LayoutParams(-1, dp(60)).apply { topMargin = dp(6) })
+        row.addView(homeIcon(R.drawable.jq_home_alarm), LinearLayout.LayoutParams(dp(32), dp(32)))
+        row.addView(text("SOS 紧急求助", 16f, ui.danger, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(6) })
+        row.addView(text("原型未接入", 12f, ui.danger), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
+        root.addView(row, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
     }
 
     private fun openQuickAction(destination: QuickActionDestination, name: String) {
