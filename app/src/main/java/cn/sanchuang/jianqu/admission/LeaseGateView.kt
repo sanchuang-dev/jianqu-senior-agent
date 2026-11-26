@@ -104,8 +104,10 @@ internal class LeaseGateView(private val activity: Activity) {
         val card = column().apply {
             val padding = dp(if (wide) 18 else 20)
             setPadding(padding, padding, padding, padding)
-            background = JianquDrawables.shape(activity, activity.getColor(R.color.jq_lease_panel), JianquDimensions.companionRadiusDp, ui.surface)
         }
+        card.background = LeaseFrostedBackground(root, card)
+        scroll.setOnScrollChangeListener { _, _, _, _, _ -> card.invalidate() }
+        root.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> card.invalidate() }
 
         if (rentalPage && checkout != null) {
             if (pending) payment(card, checkout, changed) else rental(card, checkout, state, changed)
@@ -175,7 +177,7 @@ internal class LeaseGateView(private val activity: Activity) {
                     15f, if (selected) ui.accentStrong else ui.ink, selected).apply {
                     gravity = Gravity.CENTER
                     minHeight = dp(JianquDimensions.compactActionHeightDp)
-                    background = JianquDrawables.touch(activity, if (selected) ui.accentSoft else ui.surfaceSecondary,
+                    background = JianquDrawables.touch(activity, if (selected) ui.accentSoft else activity.getColor(R.color.jq_lease_glass_choice),
                         radius = JianquDimensions.tileRadiusDp, stroke = if (selected) ui.accentStrong else null)
                     contentDescription = term.label + " ¥" + term.exampleAmountYuan + if (selected) " 已选" else ""
                     setOnClickListener { checkout.choose(term); changed() }
