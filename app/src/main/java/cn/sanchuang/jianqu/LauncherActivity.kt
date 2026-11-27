@@ -315,14 +315,14 @@ class LauncherActivity : Activity() {
             body.addView(homeGreeting().apply {
                 setPadding(dp(12), dp(8), dp(12), dp(8))
             }, LinearLayout.LayoutParams(-1, -2))
-            body.addSpace(10)
-            top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, 1.85f))
+            body.addSpace(if (landscape) 10 else 24)
+            top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, if (landscape) 1.85f else 1.65f))
             top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 1f).apply {
                 leftMargin = dp(10)
             })
         }
         body.addView(top, LinearLayout.LayoutParams(-1, -2))
-        body.addSpace(12)
+        body.addSpace(if (landscape) 12 else 28)
         buildQuickActions(body, glass)
     }
 
@@ -344,7 +344,7 @@ class LauncherActivity : Activity() {
         clock.addView(TextClock(this).apply {
             format12Hour = "HH:mm"
             format24Hour = "HH:mm"
-            textSize = if (landscape) 42f else 44f
+            textSize = if (landscape) 42f else 52f
             setTextColor(ink)
             typeface = Typeface.create("serif", Typeface.NORMAL)
             includeFontPadding = false
@@ -353,14 +353,13 @@ class LauncherActivity : Activity() {
         dateRow.addView(TextClock(this).apply {
             format12Hour = "M月d日 EEEE"
             format24Hour = "M月d日 EEEE"
-            textSize = 14f
+            textSize = if (landscape) 14f else 16f
             setTextColor(muted)
             if (!landscape) {
                 maxLines = 1
-                setAutoSizeTextTypeUniformWithConfiguration(11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+                setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
             }
-        }, if (landscape) LinearLayout.LayoutParams(-2, -2)
-           else LinearLayout.LayoutParams(0, -2, 1f))
+        }, LinearLayout.LayoutParams(-2, -2))
         if (forecast?.stale == true) {
             dateRow.addView(View(this).apply {
                 background = JianquDrawables.shape(this@LauncherActivity,
@@ -374,23 +373,26 @@ class LauncherActivity : Activity() {
             returningFromWeather = true
             startActivity(Intent(this, WeatherActivity::class.java))
         }
-        val summary = homeRow().apply {
-            minimumHeight = dp(104)
-            val side = if (landscape) 14 else 10
-            setPadding(dp(side), dp(10), dp(side), dp(10))
+        val summary = (if (landscape) homeRow() else homeColumn()).apply {
+            minimumHeight = dp(if (landscape) 104 else 184)
+            val side = if (landscape) 14 else 16
+            val vertical = if (landscape) 10 else 16
+            setPadding(dp(side), dp(vertical), dp(side), dp(vertical))
             background = glass.surface(this)
             contentDescription = if (forecast?.stale == true) "天气数据可能已过期，查看七日预报" else "天气，查看七日预报"
             isFocusable = true
             setOnClickListener { openWeather() }
         }
-        clock.gravity = Gravity.BOTTOM
-        summary.addView(clock, LinearLayout.LayoutParams(0, -1, 1f))
-        val weather = homeColumn().apply {
-            gravity = Gravity.CENTER_HORIZONTAL or if (forecast != null) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
+        clock.gravity = if (landscape) Gravity.BOTTOM else Gravity.TOP
+        summary.addView(clock, if (landscape) LinearLayout.LayoutParams(0, -1, 1f)
+            else LinearLayout.LayoutParams(-1, -2))
+        val weather = (if (landscape) homeColumn() else homeRow()).apply {
+            gravity = if (landscape) Gravity.CENTER_HORIZONTAL or if (forecast != null) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
+                else Gravity.CENTER_VERTICAL
         }
         if (forecast != null) {
             weather.addView(homeIcon(weatherIcon(forecast.days.first().symbol)),
-                LinearLayout.LayoutParams(dp(64), dp(64)))
+                LinearLayout.LayoutParams(dp(if (landscape) 64 else 72), dp(if (landscape) 64 else 72)))
         }
         val label = when {
             place == null -> "选择城市"
@@ -398,13 +400,16 @@ class LauncherActivity : Activity() {
             forecast == null -> "${place.name} · 查询天气"
             else -> "${place.name} · ${forecast.days.first().symbol} · ${forecast.nearTemperature}°C"
         }
-        weather.addView(text(label, 14f, muted).apply {
-            gravity = Gravity.CENTER
+        weather.addView(text(label, if (landscape) 14f else 16f, if (landscape) muted else ink).apply {
+            gravity = if (landscape) Gravity.CENTER else Gravity.CENTER_VERTICAL
             maxLines = if (forecast != null) 1 else 2
             if (forecast != null) setAutoSizeTextTypeUniformWithConfiguration(
-                11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-        }, LinearLayout.LayoutParams(-1, -2))
-        summary.addView(weather, LinearLayout.LayoutParams(0, -1, 0.85f))
+                11, if (landscape) 14 else 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+        }, if (landscape) LinearLayout.LayoutParams(-1, -2) else LinearLayout.LayoutParams(0, -2, 1f).apply {
+            if (forecast != null) leftMargin = dp(8)
+        })
+        summary.addView(weather, if (landscape) LinearLayout.LayoutParams(0, -1, 0.85f)
+            else LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         return summary
     }
 
@@ -415,11 +420,12 @@ class LauncherActivity : Activity() {
         contentDescription = "小暖，进入本地模拟陪伴交互"
         isFocusable = true
         setOnClickListener { openCompanion() }
-        addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(64), dp(64)))
-        addView(text("和小暖聊聊吧…", 15f, ink).apply {
+        val iconSize = if (landscape) 64 else 72
+        addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)))
+        addView(text(if (landscape) "和小暖聊聊吧…" else "和小暖聊聊吧", if (landscape) 15f else 18f, ink).apply {
             gravity = Gravity.CENTER
             maxLines = 2
-        }, LinearLayout.LayoutParams(-1, -2))
+        }, LinearLayout.LayoutParams(-1, -2).apply { if (!landscape) topMargin = dp(16) })
     }
 
     private fun openCompanion() {
@@ -435,7 +441,7 @@ class LauncherActivity : Activity() {
             in 14..17 -> "下午好"
             else -> "晚上好"
         }
-        return JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 25f, ink)
+        return JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 34f, ink)
     }
 
     private fun homeActionIcon(action: QuickAction): Int = when (action.destination) {
@@ -455,14 +461,15 @@ class LauncherActivity : Activity() {
     private fun buildQuickActions(body: LinearLayout, glass: HomeGlass) {
         val width = resources.configuration.screenWidthDp
         val cols = if (landscape && width >= 800) 8 else if (width >= 480) 4 else 2
+        val tileHeight = if (landscape) 90 else ((width - 32 - (cols - 1) * 8) / cols).coerceIn(108, 164)
         quickActions.take(8).chunked(cols).forEach { group ->
             val row = homeRow()
             group.forEachIndexed { index, item ->
-                row.addView(makeQuickAction(item, glass), LinearLayout.LayoutParams(0, dp(90), 1f).apply {
+                row.addView(makeQuickAction(item, glass), LinearLayout.LayoutParams(0, dp(tileHeight), 1f).apply {
                     if (index > 0) leftMargin = dp(8)
                 })
             }
-            body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+            body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(if (landscape) 8 else 12) })
         }
     }
 
@@ -473,9 +480,10 @@ class LauncherActivity : Activity() {
             background = glass.surface(this)
             isFocusable = true
             contentDescription = action.title
-            addView(homeIcon(homeActionIcon(action)), LinearLayout.LayoutParams(dp(48), dp(48)))
-            addView(text(action.title, 15f, ink, true).apply { gravity = Gravity.CENTER },
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+            val iconSize = if (landscape) 48 else 56
+            addView(homeIcon(homeActionIcon(action)), LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)))
+            addView(text(action.title, if (landscape) 15f else 16f, ink, true).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(if (landscape) 3 else 8) })
             setOnClickListener { openQuickAction(action.destination, action.title) }
         }
 
