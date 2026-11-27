@@ -316,16 +316,13 @@ class LauncherActivity : Activity() {
             setPadding(dp(19), dp(JianquSpacing.space16Dp), dp(19), dp(JianquSpacing.space12Dp))
         }
         desktopBars.apply(edgeToEdge = false)
-        setContentView(root)
-
-        val back = text("‹  返回桌面", JianquTypography.bodyLargeSp, terracotta, true).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { showHome() }
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            addView(JianquPageHeader.create(this@LauncherActivity, "全部应用", onBack = ::showHome))
+            addView(root, LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        root.addView(back, LinearLayout.LayoutParams(-1, dp(48)))
-        root.addView(JianquTypography.display(this, "全部应用", JianquTypography.pageTitleSp, ink), LinearLayout.LayoutParams(-1, dp(58)))
+        setContentView(screen)
         installedApps = emptyList()
         val searchRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL

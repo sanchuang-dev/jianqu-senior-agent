@@ -2,9 +2,6 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.widget.FrameLayout
 import android.view.View
 import android.content.pm.LauncherApps
 import android.graphics.drawable.GradientDrawable
@@ -143,33 +140,6 @@ class DemoActivity : Activity() {
         JianquDrawables.touch(this, color, stroke = if (outlined) ui.border else null)
 
     /** 56dp icon-only back target with the same touch treatment as HOME. */
-    private fun backControl(description: String, click: () -> Unit): FrameLayout =
-        FrameLayout(this).apply {
-            background = pressable(ui.surface, outlined = true)
-            isClickable = true
-            isFocusable = true
-            contentDescription = description
-            setOnClickListener { click() }
-            addView(object : View(this@DemoActivity) {
-                private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = accent
-                    style = Paint.Style.STROKE
-                    strokeCap = Paint.Cap.ROUND
-                    strokeJoin = Paint.Join.ROUND
-                    strokeWidth = dp(2).toFloat()
-                }
-
-                override fun onDraw(canvas: Canvas) {
-                    super.onDraw(canvas)
-                    val cx = width / 2f
-                    val cy = height / 2f
-                    canvas.drawLine(cx + dp(11), cy, cx - dp(10), cy, stroke)
-                    canvas.drawLine(cx - dp(10), cy, cx - dp(2), cy - dp(8), stroke)
-                    canvas.drawLine(cx - dp(10), cy, cx - dp(2), cy + dp(8), stroke)
-                }
-            }, FrameLayout.LayoutParams(-1, -1))
-        }
-
     private fun line(
         parent: LinearLayout, text: String, size: Float = JianquTypography.bodyLargeSp,
         color: Int = ink, bold: Boolean = false, top: Int = 12
@@ -233,20 +203,10 @@ class DemoActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space8Dp))
-        }
-        bar.addView(backControl(if (page == Page.PAY) "返回设备租赁" else "返回桌面") {
-            onBackPressed()
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        bar.addView(
-            label(if (page == Page.HOME) "设备租赁" else "扫码付款", JianquTypography.toolbarTitleSp, ink, true),
-            LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(JianquSpacing.space12Dp) }
-        )
-        bar.addView(label("原型演示", JianquTypography.supportingSp, muted), LinearLayout.LayoutParams(-2, dp(52)))
-        root.addView(bar)
+        root.addView(JianquPageHeader.create(this,
+            if (page == Page.HOME) "设备租赁" else "扫码付款",
+            backDescription = if (page == Page.PAY) "返回设备租赁" else "返回桌面",
+            status = "原型演示") { onBackPressed() })
 
         val scroll = ScrollView(this).apply { isFillViewport = true }
         val body = LinearLayout(this).apply {
@@ -495,18 +455,10 @@ class DemoActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(17), dp(JianquSpacing.space6Dp), dp(17), dp(JianquSpacing.space6Dp))
-        }
-        header.addView(backControl("返回桌面") {
+        root.addView(JianquPageHeader.create(this, "小暖") {
             conversation.clear()
             finish()
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        header.addView(label("小暖", JianquTypography.toolbarTitleSp, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(JianquSpacing.space14Dp) })
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(72)))
+        }, LinearLayout.LayoutParams(-1, -2))
 
         val area = LinearLayout(this).apply {
             orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL

@@ -20,7 +20,7 @@ internal object JianquTypography {
     const val titleCompactSp = 24f
     const val headingLargeSp = 25f
     const val displayCompactSp = 28f
-    const val backGlyphSp = 31f
+    const val navigationTitleSp = titleCompactSp
     const val pageTitleSp = 32f
     const val displayLargeSp = 34f
 

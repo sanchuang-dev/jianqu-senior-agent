@@ -55,18 +55,8 @@ internal abstract class ServicePreviewActivity : Activity() {
     }
     protected fun shell(title: String, primary: LinearLayout, secondary: LinearLayout, back: () -> Unit = { finish() }) {
         val root = column().apply { setBackgroundColor(ui.background) }
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space8Dp))
-        }
-        bar.addView(text("‹", 35f, ui.accentStrong, true).apply {
-            gravity = Gravity.CENTER; contentDescription = "返回"; isClickable = true; isFocusable = true
-            background = JianquDrawables.touch(this@ServicePreviewActivity, ui.surface, 14, ui.border)
-            setOnClickListener { back() }
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        bar.addView(text(title, JianquTypography.titleCompactSp, ui.ink, true), LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(13) })
-        bar.addView(text("原型演示", JianquTypography.captionLargeSp, ui.muted))
-        root.addView(bar)
+        root.addView(JianquPageHeader.create(this, title,
+            backDescription = "返回", status = "原型演示", onBack = back))
         val content = column().apply {
             orientation = if (wide()) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space24Dp))

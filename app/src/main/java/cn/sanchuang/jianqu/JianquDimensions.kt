@@ -9,6 +9,7 @@ internal object JianquDimensions {
     const val minActionHeightDp = 52
     const val compactActionHeightDp = 48
     const val largeActionHeightDp = 56
+    const val navigationIconDp = 20
     const val utilityIconDp = 24
     const val utilityIconGapDp = 7
 }

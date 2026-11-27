@@ -203,19 +203,14 @@ class ContentGalleryActivity : Activity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
     }
 
-    private fun header(): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(JianquSpacing.space16Dp), dp(5), dp(JianquSpacing.space16Dp), dp(5))
-        addView(button("‹", false) { back() }.apply {
-            textSize = JianquTypography.backGlyphSp
-            contentDescription = if (screen == Screen.LIST || screen == Screen.ALBUM_GATE)
-                "返回桌面" else "返回上一级"
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        addView(text(title(), JianquTypography.toolbarTitleSp, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(JianquSpacing.space14Dp) })
-        if (wide()) addView(text("本地原型 · 无真实内容服务", JianquTypography.captionLargeSp, accent, true))
-    }
+    private fun header(): LinearLayout = JianquPageHeader.create(
+        this, title(),
+        backDescription = if (screen == Screen.LIST || screen == Screen.ALBUM_GATE)
+            "返回桌面" else "返回上一级",
+        status = if (wide()) "本地原型 · 无真实内容服务" else null,
+        statusColor = accent,
+        onBack = ::back
+    )
 
     private fun intro(): LinearLayout = card().apply {
         val iconBg = FrameLayout(this@ContentGalleryActivity).apply {
@@ -421,7 +416,7 @@ class ContentGalleryActivity : Activity() {
     private fun albumViewer(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setBackgroundColor(ui.background)
-        addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
+        addView(header(), LinearLayout.LayoutParams(-1, -2))
         val pane = FrameLayout(this@ContentGalleryActivity).apply {
             background = JianquDrawables.shape(this@ContentGalleryActivity, ui.surface, JianquDimensions.cardRadiusDp, ui.border)
             val label = text(
@@ -473,7 +468,7 @@ class ContentGalleryActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(ui.background)
         }
-        root.addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(header(), LinearLayout.LayoutParams(-1, -2))
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS

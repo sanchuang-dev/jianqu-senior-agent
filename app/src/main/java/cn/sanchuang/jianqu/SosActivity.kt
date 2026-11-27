@@ -226,20 +226,9 @@ class SosActivity : Activity() {
         }
     }
 
-    private fun header() = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(JianquSpacing.space16Dp), dp(5), dp(JianquSpacing.space16Dp), dp(5))
-        addView(button("‹") { leave() }.apply {
-            textSize = JianquTypography.backGlyphSp
-            contentDescription = "返回桌面"
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        addView(label("SOS 紧急求助", JianquTypography.toolbarTitleSp, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply {
-                leftMargin = dp(JianquSpacing.space14Dp)
-            })
-        if (wide()) addView(label("未接入真实救援 · 仅演示", JianquTypography.supportingSp, danger, true))
-    }
+    private fun header() = JianquPageHeader.create(this, "SOS 紧急求助",
+        status = if (wide()) "未接入真实救援 · 仅演示" else null,
+        statusColor = danger, onBack = ::leave)
 
     private fun render() {
         val horizontal = wide()
@@ -247,7 +236,7 @@ class SosActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(ui.background)
         }
-        root.addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(header(), LinearLayout.LayoutParams(-1, -2))
 
         val scroller = ScrollView(this).apply {
             isFillViewport = true

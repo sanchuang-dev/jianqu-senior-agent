@@ -94,15 +94,13 @@ class WeatherActivity : Activity() {
             setBackgroundColor(backgroundColor)
             setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space12Dp))
         }
-        setContentView(root)
-        root.addView(label("‹  返回桌面", JianquTypography.bodyLargeSp, accent, true).apply {
-            isClickable = true
-            isFocusable = true
-            contentDescription = "返回桌面"
-            setOnClickListener { finish() }
-        }, LinearLayout.LayoutParams(-1, dp(45)))
-        root.addView(label("七日天气预报", 30f, ink, true),
-            LinearLayout.LayoutParams(-1, dp(61)))
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            addView(JianquPageHeader.create(this@WeatherActivity, "七日天气预报", onBack = ::finish))
+            addView(root, LinearLayout.LayoutParams(-1, 0, 1f))
+        }
+        setContentView(screen)
 
         val scroll = ScrollView(this).apply { overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS }
         val content = LinearLayout(this).apply {

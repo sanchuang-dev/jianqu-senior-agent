@@ -326,28 +326,9 @@ class FamilyCallActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(JianquSpacing.space18Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space18Dp), dp(JianquSpacing.space8Dp))
-        }
-        val back = text("‹", 35f, accent).apply {
-            gravity = Gravity.CENTER
-            minHeight = dp(JianquDimensions.minActionHeightDp)
-            contentDescription = "返回桌面"
-            background = ripple(surface, outlined = true)
-            isFocusable = true
-            isClickable = true
-            setOnClickListener { leave() }
-        }
-        header.addView(back, LinearLayout.LayoutParams(dp(56), dp(56)))
-        header.addView(text("家人通话", JianquTypography.toolbarTitleSp, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(JianquSpacing.space14Dp) })
-        if (isWide) {
-            header.addView(text("原型演示 · 未接通微信", JianquTypography.supportingSp, accent, true),
-                LinearLayout.LayoutParams(-2, dp(56)))
-        }
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(JianquPageHeader.create(this, "家人通话",
+            status = if (isWide) "原型演示 · 未接通微信" else null,
+            statusColor = accent, onBack = ::leave), LinearLayout.LayoutParams(-1, -2))
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true

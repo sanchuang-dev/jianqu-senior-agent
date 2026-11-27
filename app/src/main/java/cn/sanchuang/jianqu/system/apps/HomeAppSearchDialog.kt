@@ -26,6 +26,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import cn.sanchuang.jianqu.JianquColors
 import cn.sanchuang.jianqu.JianquDrawables
+import cn.sanchuang.jianqu.JianquDimensions
+import cn.sanchuang.jianqu.JianquPageHeader
 import cn.sanchuang.jianqu.JianquGlassMaterial
 import cn.sanchuang.jianqu.JianquTypography
 import cn.sanchuang.jianqu.R
@@ -88,7 +90,8 @@ internal class HomeAppSearchDialog(
             setMargins(margin, margin, margin, margin)
         })
         val header = row()
-        header.addView(iconAction(R.drawable.ic_jq_glass_back, "关闭搜索") { dismiss() }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        header.addView(JianquPageHeader.backButton(activity, "关闭搜索") { dismiss() },
+            LinearLayout.LayoutParams(dp(JianquDimensions.compactActionHeightDp), dp(JianquDimensions.compactActionHeightDp)))
         input = EditText(activity).apply {
             setSingleLine(true)
             hint = "搜索已安装应用"

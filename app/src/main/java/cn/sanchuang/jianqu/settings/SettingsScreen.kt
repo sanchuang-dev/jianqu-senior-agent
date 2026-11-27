@@ -12,6 +12,7 @@ import cn.sanchuang.jianqu.JianquColors
 import cn.sanchuang.jianqu.JianquDimensions
 import cn.sanchuang.jianqu.JianquDrawables
 import cn.sanchuang.jianqu.JianquIcons
+import cn.sanchuang.jianqu.JianquPageHeader
 import cn.sanchuang.jianqu.JianquSpacing
 import cn.sanchuang.jianqu.JianquTypography
 import cn.sanchuang.jianqu.R
@@ -81,18 +82,11 @@ internal class SettingsScreen(
             val side = dp(if (wide) JianquSpacing.space24Dp else JianquSpacing.space16Dp)
             setPadding(side, dp(JianquSpacing.space12Dp), side, dp(JianquSpacing.space16Dp))
         }
-        val header = row()
-        header.addView(FrameLayout(activity).apply {
-            background = JianquDrawables.touch(activity, ui.surface, JianquDimensions.tileRadiusDp, ui.border)
-            contentDescription = "返回桌面"
-            isFocusable = true
-            addView(icon(R.drawable.ic_jq_glass_back), FrameLayout.LayoutParams(
-                dp(JianquDimensions.utilityIconDp), dp(JianquDimensions.utilityIconDp), Gravity.CENTER))
-            setOnClickListener { onBack() }
-        }, LinearLayout.LayoutParams(dp(JianquDimensions.compactActionHeightDp), dp(JianquDimensions.compactActionHeightDp)))
-        header.addView(JianquTypography.display(activity, "设置", JianquTypography.pageTitleSp, ui.ink),
-            LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(JianquSpacing.space16Dp) })
-        root.addView(header, LinearLayout.LayoutParams(-1, -2))
+        val screen = column().apply {
+            setBackgroundColor(ui.background)
+            addView(JianquPageHeader.create(activity, "设置", onBack = onBack))
+            addView(root, LinearLayout.LayoutParams(-1, 0, 1f))
+        }
         root.space(JianquSpacing.space20Dp)
         if (wide) {
             val split = row().apply { gravity = Gravity.TOP }
@@ -146,7 +140,7 @@ internal class SettingsScreen(
             }
             root.addView(scroll(content), LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        return root
+        return screen
     }
 
     private fun scroll(content: LinearLayout) = ScrollView(activity).apply {
