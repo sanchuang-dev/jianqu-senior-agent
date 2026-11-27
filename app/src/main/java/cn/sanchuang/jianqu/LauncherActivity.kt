@@ -3,9 +3,7 @@ package cn.sanchuang.jianqu
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.res.Configuration
 import android.content.pm.LauncherActivityInfo
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Bundle
@@ -13,7 +11,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.text.Editable
-import android.text.InputFilter
 import android.text.InputType
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -27,12 +24,13 @@ import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.TextClock
 import android.widget.TextView
 import android.widget.Toast
 import cn.sanchuang.jianqu.admission.DeviceAccess
 import cn.sanchuang.jianqu.admission.DeviceAccessEnvironment
 import cn.sanchuang.jianqu.admission.LeaseGateView
+import cn.sanchuang.jianqu.home.HomeAction
+import cn.sanchuang.jianqu.home.HomeScreen
 import cn.sanchuang.jianqu.system.apps.HomeAppSearchDialog
 import cn.sanchuang.jianqu.system.apps.LauncherAppCatalog
 import cn.sanchuang.jianqu.system.apps.LauncherAppSearch
@@ -42,8 +40,7 @@ import java.util.concurrent.RejectedExecutionException
 /**
  * Android HOME is a stable place to return to, not the device's entire application catalog.
  * All ten home functions are fixed; the app catalog and HOME search share real installed apps.
- * Other business/communication functions are intentionally honest navigation placeholders
- * until their independent JQ-005..011 contracts are implemented.
+ * Routes retain the admission check; downstream screens own their real or prototype capability.
  */
 class LauncherActivity : Activity() {
     private val ui = JianquColors(this)
@@ -51,15 +48,6 @@ class LauncherActivity : Activity() {
     private val access by lazy { DeviceAccessEnvironment.open(this) }
     private var renderedGateState: DeviceAccess? = null
     private val desktopBars by lazy { LauncherSystemBars(window) }
-
-    private enum class QuickActionDestination { PLACEHOLDER, FAMILY_CALL, CONTENT_ALBUM, CONTENT_VIDEO, STOREFRONT, CONTENT_MUSIC, CONTENT_HEALTH, CONTENT_NEWS, SERVICES, SETTINGS, ALL_APPS }
-
-    private data class QuickAction(
-        val title: String,
-        val iconRes: Int,
-        val color: Int,
-        val destination: QuickActionDestination
-    )
 
     private val backgroundColor get() = ui.background
     private val ink get() = ui.ink
@@ -80,19 +68,6 @@ class LauncherActivity : Activity() {
     private var page = Page.HOME
     private var restoreHomeOnResume = false
     private var returningFromWeather = false
-
-    private val quickActions by lazy { listOf(
-        QuickAction("家人通话", R.drawable.ic_home_video_camera, ui.familyCallIcon, QuickActionDestination.FAMILY_CALL),
-        QuickAction("家庭相册", R.drawable.ic_home_images, ui.albumIcon, QuickActionDestination.CONTENT_ALBUM),
-        QuickAction("影视节目", R.drawable.ic_home_film_strip, ui.videoIcon, QuickActionDestination.CONTENT_VIDEO),
-        QuickAction("本地生活", R.drawable.ic_home_shopping_bag_open, ui.storeIcon, QuickActionDestination.STOREFRONT),
-        QuickAction("音乐戏曲", R.drawable.ic_home_music_notes, ui.musicIcon, QuickActionDestination.CONTENT_MUSIC),
-        QuickAction("健康中心", R.drawable.ic_home_stethoscope, ui.healthIcon, QuickActionDestination.CONTENT_HEALTH),
-        QuickAction("建政栏目", R.drawable.ic_home_newspaper, ui.newsIcon, QuickActionDestination.CONTENT_NEWS),
-        QuickAction("我的服务", R.drawable.ic_home_hand_heart, ui.servicesIcon, QuickActionDestination.SERVICES),
-        QuickAction("设置", R.drawable.ic_home_gear, ui.settingsIcon, QuickActionDestination.SETTINGS),
-        QuickAction("全部应用", R.drawable.ic_home_squares_four, ui.allAppsIcon, QuickActionDestination.ALL_APPS)
-    ) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -162,7 +137,6 @@ class LauncherActivity : Activity() {
     }
 
     private fun dp(n: Int) = (resources.displayMetrics.density * n + 0.5f).toInt()
-    private val landscape get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     private fun shape(color: Int, radius: Int, stroke: Int? = null): GradientDrawable =
         JianquDrawables.shape(this, color, radius, stroke)
@@ -208,340 +182,53 @@ class LauncherActivity : Activity() {
         ))
     }
 
-    private fun homeColumn() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-    private fun homeRow() = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-    }
-    private fun homeIcon(resource: Int): ImageView = ImageView(this).apply {
-        if (resource != 0) setImageResource(resource)
-        scaleType = ImageView.ScaleType.FIT_CENTER
-        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-    }
-    private class HomeGlass(private val wallpaper: View) {
-        private val panels = ArrayList<View>()
-
-        fun surface(panel: View, radius: Int = JianquDimensions.companionRadiusDp): RippleDrawable {
-            panels.add(panel)
-            val context = wallpaper.context
-            val content = JianquGlassMaterial.TILE.background(wallpaper, panel,
-                R.drawable.jq_home_background, radius)
-            return RippleDrawable(android.content.res.ColorStateList.valueOf(context.getColor(R.color.jq_ripple)),
-                content, JianquDrawables.shape(context, android.graphics.Color.WHITE, radius))
-        }
-
-        fun invalidate() = panels.forEach { it.invalidate() }
-    }
-
     private fun showHome() {
         if (!admit()) return
         homeSearch?.dismiss()
         page = Page.HOME
         renderedGateState = null
-        val wallpaper = FrameLayout(this).apply {
-            setBackgroundColor(getColor(R.color.jq_home_canvas))
-            addView(ImageView(this@LauncherActivity).apply {
-                setImageResource(R.drawable.jq_home_background)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, FrameLayout.LayoutParams(-1, -1))
-        }
-        val root = homeColumn().apply {
-            val side = if (landscape) 20 else 16
-            setPadding(dp(side), dp(10), dp(side), dp(10))
-        }
-        wallpaper.addView(root, FrameLayout.LayoutParams(-1, -1))
-        val glass = HomeGlass(wallpaper)
-        wallpaper.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> glass.invalidate() }
         desktopBars.apply(edgeToEdge = true)
-        LauncherSystemBars.insetContent(root)
-        setContentView(wallpaper)
-        root.requestApplyInsets()
-        val header = homeRow()
-        val brand = homeRow().apply {
-            minimumHeight = dp(48)
-            addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
-            addView(text("见趣 · 闺蜜机", 18f, ink, true).apply {
-                maxLines = 1
-                ellipsize = TextUtils.TruncateAt.END
-            }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
-        }
-        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
-        val developer = access.developerAction(this) { showHome() }
-        if (developer != null) {
-            var taps = 0
-            var firstTap = 0L
-            brand.setOnClickListener {
-                val now = android.os.SystemClock.elapsedRealtime()
-                if (taps == 0 || now - firstTap > 1500L) {
-                    firstTap = now
-                    taps = 0
+        val screen = HomeScreen(
+            activity = this,
+            previewUnenforced = access.current() == DeviceAccess.PREVIEW_UNENFORCED,
+            developer = access.developerAction(this) { showHome() },
+            onAction = ::openQuickAction,
+            onSearch = ::showHomeSearch,
+            onSos = { if (admit()) startActivity(Intent(this, SosActivity::class.java)) },
+            onWeather = {
+                if (admit()) {
+                    returningFromWeather = true
+                    startActivity(Intent(this, WeatherActivity::class.java))
                 }
-                if (++taps == 3) {
-                    taps = 0
-                    developer()
-                }
+            },
+            onCompanion = {
+                if (admit()) startActivity(Intent(this, DemoActivity::class.java)
+                    .putExtra(DemoActivity.EXTRA_OPEN_CHAT, true))
             }
-        }
-        buildHomeHeaderActions(header)
-        root.addView(header, LinearLayout.LayoutParams(-1, -2))
-        if (access.current() == DeviceAccess.PREVIEW_UNENFORCED) {
-            root.addView(text("公开预览 · 租赁未接入", 12f, muted))
-        }
-        val scroll = ScrollView(this).apply {
-            clipToPadding = false
-            isFillViewport = true
-            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
-            isVerticalScrollBarEnabled = false
-        }
-        val body = homeColumn().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(4)) }
-        scroll.addView(body)
-        scroll.setOnScrollChangeListener { _, _, _, _, _ -> glass.invalidate() }
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        val wide = landscape && resources.configuration.screenWidthDp >= 660
-        val top = homeRow().apply { gravity = Gravity.CENTER_VERTICAL }
-        if (wide) {
-            top.addView(homeGreeting().apply {
-                setPadding(dp(12), 0, dp(4), 0)
-            }, LinearLayout.LayoutParams(0, -2, 1.1f))
-            top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 0.7f).apply {
-                leftMargin = dp(12)
-            })
-            top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, 1.85f).apply {
-                leftMargin = dp(12)
-            })
-        } else {
-            body.addView(homeGreeting().apply {
-                setPadding(dp(12), dp(8), dp(12), dp(8))
-            }, LinearLayout.LayoutParams(-1, -2))
-            body.addSpace(if (landscape) 10 else 24)
-            top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, if (landscape) 1.85f else 1.65f))
-            top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 1f).apply {
-                leftMargin = dp(10)
-            })
-        }
-        body.addView(top, LinearLayout.LayoutParams(-1, -2))
-        body.addSpace(if (landscape) 12 else 28)
-        buildQuickActions(body, glass)
+        )
+        setContentView(screen.render())
     }
 
-    private fun weatherIcon(symbol: String): Int = when (symbol) {
-        "晴" -> R.drawable.jq_home_sunny
-        "多云间晴", "晴间多云" -> R.drawable.jq_home_partly_cloudy
-        "多云" -> R.drawable.jq_home_cloudy
-        "雨" -> R.drawable.jq_home_rain
-        "雷阵雨" -> R.drawable.jq_home_thunder
-        "雪" -> R.drawable.jq_home_snow
-        "雾" -> R.drawable.jq_home_fog
-        else -> 0
-    }
-
-    private fun environmentPanel(glass: HomeGlass): View {
-        val place = WeatherCity.place(this)
-        val forecast = place?.let { WeatherData.cached(this, it) }
-        val clock = homeColumn()
-        clock.addView(TextClock(this).apply {
-            format12Hour = "HH:mm"
-            format24Hour = "HH:mm"
-            textSize = if (landscape) 42f else 52f
-            setTextColor(ink)
-            typeface = Typeface.create("serif", Typeface.NORMAL)
-            includeFontPadding = false
-        })
-        val dateRow = homeRow()
-        dateRow.addView(TextClock(this).apply {
-            format12Hour = "M月d日 EEEE"
-            format24Hour = "M月d日 EEEE"
-            textSize = if (landscape) 14f else 16f
-            setTextColor(muted)
-            if (!landscape) {
-                maxLines = 1
-                setAutoSizeTextTypeUniformWithConfiguration(12, 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-            }
-        }, LinearLayout.LayoutParams(-2, -2))
-        if (forecast?.stale == true) {
-            dateRow.addView(View(this).apply {
-                background = JianquDrawables.shape(this@LauncherActivity,
-                    getColor(R.color.jq_status_stale), 3)
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, LinearLayout.LayoutParams(dp(6), dp(6)).apply { leftMargin = dp(6) })
-        }
-        clock.addView(dateRow, LinearLayout.LayoutParams(-1, -2))
-        fun openWeather() {
-            if (!admit()) return
-            returningFromWeather = true
-            startActivity(Intent(this, WeatherActivity::class.java))
-        }
-        val summary = (if (landscape) homeRow() else homeColumn()).apply {
-            minimumHeight = dp(if (landscape) 104 else 184)
-            val side = if (landscape) 14 else 16
-            val vertical = if (landscape) 10 else 16
-            setPadding(dp(side), dp(vertical), dp(side), dp(vertical))
-            background = glass.surface(this)
-            contentDescription = if (forecast?.stale == true) "天气数据可能已过期，查看七日预报" else "天气，查看七日预报"
-            isFocusable = true
-            setOnClickListener { openWeather() }
-        }
-        clock.gravity = if (landscape) Gravity.BOTTOM else Gravity.TOP
-        summary.addView(clock, if (landscape) LinearLayout.LayoutParams(0, -1, 1f)
-            else LinearLayout.LayoutParams(-1, -2))
-        val weather = (if (landscape) homeColumn() else homeRow()).apply {
-            gravity = if (landscape) Gravity.CENTER_HORIZONTAL or if (forecast != null) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
-                else Gravity.CENTER_VERTICAL
-        }
-        if (forecast != null) {
-            weather.addView(homeIcon(weatherIcon(forecast.days.first().symbol)),
-                LinearLayout.LayoutParams(dp(if (landscape) 64 else 72), dp(if (landscape) 64 else 72)))
-        }
-        val label = when {
-            place == null -> "选择城市"
-            !WeatherData.consented(this) -> "${place.name} · 启用天气"
-            forecast == null -> "${place.name} · 查询天气"
-            else -> "${place.name} · ${forecast.days.first().symbol} · ${forecast.nearTemperature}°C"
-        }
-        weather.addView(text(label, if (landscape) 14f else 16f, if (landscape) muted else ink).apply {
-            gravity = if (landscape) Gravity.CENTER else Gravity.CENTER_VERTICAL
-            maxLines = if (forecast != null) 1 else 2
-            if (forecast != null) setAutoSizeTextTypeUniformWithConfiguration(
-                11, if (landscape) 14 else 16, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
-        }, if (landscape) LinearLayout.LayoutParams(-1, -2) else LinearLayout.LayoutParams(0, -2, 1f).apply {
-            if (forecast != null) leftMargin = dp(8)
-        })
-        summary.addView(weather, if (landscape) LinearLayout.LayoutParams(0, -1, 0.85f)
-            else LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        return summary
-    }
-
-    private fun companionPanel(glass: HomeGlass): View = homeColumn().apply {
-        gravity = Gravity.CENTER
-        setPadding(dp(8), dp(8), dp(8), dp(8))
-        background = glass.surface(this)
-        contentDescription = "小暖，进入本地模拟陪伴交互"
-        isFocusable = true
-        setOnClickListener { openCompanion() }
-        val iconSize = if (landscape) 64 else 72
-        addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)))
-        addView(text(if (landscape) "和小暖聊聊吧…" else "和小暖聊聊吧", if (landscape) 15f else 18f, ink).apply {
-            gravity = Gravity.CENTER
-            maxLines = 2
-        }, LinearLayout.LayoutParams(-1, -2).apply { if (!landscape) topMargin = dp(16) })
-    }
-
-    private fun openCompanion() {
-        if (!admit()) return
-        startActivity(Intent(this, DemoActivity::class.java).putExtra(DemoActivity.EXTRA_OPEN_CHAT, true))
-    }
-
-    private fun homeGreeting(): View {
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val greeting = when (hour) {
-            in 0..10 -> "早上好"
-            in 11..13 -> "中午好"
-            in 14..17 -> "下午好"
-            else -> "晚上好"
-        }
-        return JianquTypography.display(this, greeting + "，\n今天想做点什么？", if (landscape) 28f else 34f, ink)
-    }
-
-    private fun homeActionIcon(action: QuickAction): Int = when (action.destination) {
-        QuickActionDestination.FAMILY_CALL -> R.drawable.jq_home_contacts
-        QuickActionDestination.CONTENT_ALBUM -> R.drawable.jq_home_album
-        QuickActionDestination.CONTENT_VIDEO -> R.drawable.jq_home_video
-        QuickActionDestination.STOREFRONT -> R.drawable.jq_home_shopping
-        QuickActionDestination.CONTENT_HEALTH -> R.drawable.jq_home_health
-        QuickActionDestination.CONTENT_MUSIC -> R.drawable.jq_home_music_opera
-        QuickActionDestination.CONTENT_NEWS -> R.drawable.jq_home_governance
-        QuickActionDestination.SERVICES -> R.drawable.jq_home_my_services
-        QuickActionDestination.SETTINGS -> R.drawable.jq_home_settings
-        QuickActionDestination.ALL_APPS -> R.drawable.jq_home_all_apps
-        else -> 0
-    }
-
-    private fun buildQuickActions(body: LinearLayout, glass: HomeGlass) {
-        val width = resources.configuration.screenWidthDp
-        val cols = if (landscape && width >= 800) 8 else if (width >= 480) 4 else 2
-        val tileHeight = if (landscape) 90 else ((width - 32 - (cols - 1) * 8) / cols).coerceIn(108, 164)
-        quickActions.take(8).chunked(cols).forEach { group ->
-            val row = homeRow()
-            group.forEachIndexed { index, item ->
-                row.addView(makeQuickAction(item, glass), LinearLayout.LayoutParams(0, dp(tileHeight), 1f).apply {
-                    if (index > 0) leftMargin = dp(8)
-                })
-            }
-            body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(if (landscape) 8 else 12) })
-        }
-    }
-
-    private fun makeQuickAction(action: QuickAction, glass: HomeGlass): View =
-        homeColumn().apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(3), dp(4), dp(3), dp(4))
-            background = glass.surface(this)
-            isFocusable = true
-            contentDescription = action.title
-            val iconSize = if (landscape) 48 else 56
-            addView(homeIcon(homeActionIcon(action)), LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)))
-            addView(text(action.title, if (landscape) 15f else 16f, ink, true).apply { gravity = Gravity.CENTER },
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(if (landscape) 3 else 8) })
-            setOnClickListener { openQuickAction(action.destination, action.title) }
-        }
-
-    private fun buildHomeHeaderActions(header: LinearLayout) {
-        fun iconButton(resource: Int, description: String, action: () -> Unit) {
-            val button = FrameLayout(this).apply {
-                background = RippleDrawable(
-                    android.content.res.ColorStateList.valueOf(getColor(R.color.jq_ripple)), null,
-                    JianquDrawables.shape(this@LauncherActivity, android.graphics.Color.WHITE, 24))
-                isFocusable = true
-                contentDescription = description
-                tooltipText = description
-                addView(homeIcon(resource), FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
-                setOnClickListener { action() }
-            }
-            header.addView(button, LinearLayout.LayoutParams(dp(48), dp(48)).apply { leftMargin = dp(8) })
-        }
-        iconButton(R.drawable.ic_jq_app_search, "搜索应用") { showHomeSearch() }
-        quickActions.filter { it.destination == QuickActionDestination.SETTINGS ||
-            it.destination == QuickActionDestination.ALL_APPS }.forEach { item ->
-            iconButton(homeActionIcon(item), item.title) { openQuickAction(item.destination, item.title) }
-        }
-        iconButton(R.drawable.jq_home_alarm, "SOS 紧急求助，当前为未接入真实求救功能的原型") {
-            if (admit()) startActivity(Intent(this, SosActivity::class.java))
-        }
-    }
-
-    private fun openQuickAction(destination: QuickActionDestination, name: String) {
+    private fun openQuickAction(destination: HomeAction) {
         if (!admit()) return
         when (destination) {
-            QuickActionDestination.ALL_APPS -> showAllApps()
-            QuickActionDestination.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
-            QuickActionDestination.STOREFRONT -> startActivity(Intent(this, StorefrontActivity::class.java))
-            QuickActionDestination.CONTENT_ALBUM -> openContent(ContentGalleryActivity.ALBUM)
-            QuickActionDestination.CONTENT_VIDEO -> openContent(ContentGalleryActivity.VIDEO)
-            QuickActionDestination.CONTENT_MUSIC -> openContent(ContentGalleryActivity.MUSIC)
-            QuickActionDestination.CONTENT_HEALTH -> startActivity(Intent(this, HealthCenterActivity::class.java))
-            QuickActionDestination.CONTENT_NEWS -> openContent(ContentGalleryActivity.NEWS)
-            QuickActionDestination.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
-            QuickActionDestination.SETTINGS -> showSettings()
-            QuickActionDestination.PLACEHOLDER -> unavailable(
-                name,
-                "“" + name + "”是第二期固定入口，目前尚未接入实际服务。没有发起通话、消费或其他外部操作。"
-            )
+            HomeAction.ALL_APPS -> showAllApps()
+            HomeAction.FAMILY_CALL -> startActivity(Intent(this, FamilyCallActivity::class.java))
+            HomeAction.STOREFRONT -> startActivity(Intent(this, StorefrontActivity::class.java))
+            HomeAction.CONTENT_ALBUM -> openContent(ContentGalleryActivity.ALBUM)
+            HomeAction.CONTENT_VIDEO -> openContent(ContentGalleryActivity.VIDEO)
+            HomeAction.CONTENT_MUSIC -> openContent(ContentGalleryActivity.MUSIC)
+            HomeAction.CONTENT_HEALTH -> startActivity(Intent(this, HealthCenterActivity::class.java))
+            HomeAction.CONTENT_NEWS -> openContent(ContentGalleryActivity.NEWS)
+            HomeAction.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
+            HomeAction.SETTINGS -> showSettings()
+
         }
     }
 
     private fun openContent(section: String) {
         startActivity(Intent(this, ContentGalleryActivity::class.java)
             .putExtra(ContentGalleryActivity.EXTRA_SECTION, section))
-    }
-
-    private fun unavailable(title: String, message: String) {
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("返回桌面", null)
-            .show()
     }
 
     private fun showSettings() {
@@ -682,9 +369,9 @@ class LauncherActivity : Activity() {
 
         listOf(
             "01 · 设为默认桌面" to "系统首次询问时选择「闺蜜机（演示）」；也可从设置中的「默认主屏幕」进入 Android 选择页。",
-            "02 · 找到全部应用" to "首页固定位置 10「全部应用」展示本机可启动的真实 App，支持输入名称搜索，点图标即可打开。",
+            "02 · 找到全部应用" to "首页右上角「全部应用」展示本机可启动的真实 App，支持输入名称搜索，点图标即可打开。",
             "03 · 返回设备桌面" to "使用设备的 Home 键回到闺蜜机主页；在子页面点击左上角返回按钮。",
-            "04 · 服务与求助说明" to "天气、家人视频与 SOS 尚未接入真实服务。SOS 当前不能报警或通知护理人员；紧急情况请联系现场人员或使用可靠电话。"
+            "04 · 服务与求助说明" to "家人视频与 SOS 尚未接入真实服务。SOS 当前不能报警或通知护理人员；紧急情况请联系现场人员或使用可靠电话。"
         ).forEach { (heading, detail) ->
             val block = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -703,7 +390,7 @@ class LauncherActivity : Activity() {
     private fun showFirstUseGuide() {
         AlertDialog.Builder(this)
             .setTitle("欢迎使用闺蜜机")
-            .setMessage("这是 Android 桌面原型。\n\n• 想查找其他 App？点「全部应用」。\n• 按设备 Home 键可返回闺蜜机。\n• 在「设置」里可选择默认主屏幕和城市。\n\n天气、通话与 SOS 尚未接入真实服务。")
+            .setMessage("这是 Android 桌面原型。\n\n• 想查找其他 App？点「全部应用」。\n• 按设备 Home 键可返回闺蜜机。\n• 在「设置」里可选择默认主屏幕和城市。\n\n通话与 SOS 尚未接入真实服务。")
             .setPositiveButton("开始使用") { _, _ -> markIntroSeen() }
             .setNeutralButton("查看设置") { _, _ ->
                 markIntroSeen()
