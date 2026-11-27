@@ -24,13 +24,13 @@ internal object JianquTypography {
     const val pageTitleSp = 32f
     const val displayLargeSp = 34f
 
-    fun displayTypeface(): Typeface = Typeface.create("serif", Typeface.NORMAL)
+    fun displayTypeface(): Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
 
     fun applyWeight(view: TextView, bold: Boolean) {
         view.setTypeface(null, if (bold) Typeface.BOLD else Typeface.NORMAL)
     }
 
-    /** Daylight Living uses serif display titles; Android system fallback covers CJK. */
+    /** Display titles and clock use the system sans-serif family; Android fallback covers CJK. */
     fun display(context: Context, value: String, size: Float, color: Int): TextView =
         text(context, value, size, color, false).apply {
             typeface = displayTypeface()
