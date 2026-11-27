@@ -9,4 +9,23 @@ internal object JianquDimensions {
     const val minActionHeightDp = 52
     const val compactActionHeightDp = 48
     const val largeActionHeightDp = 56
+    const val utilityIconDp = 24
+    const val utilityIconGapDp = 7
+}
+
+/** Shared spacing scale; 4dp rhythm with half-steps for existing compact controls. */
+internal object JianquSpacing {
+    const val space2Dp = 2
+    const val space4Dp = 4
+    const val space6Dp = 6
+    const val space8Dp = 8
+    const val space10Dp = 10
+    const val space12Dp = 12
+    const val space14Dp = 14
+    const val space16Dp = 16
+    const val space18Dp = 18
+    const val space20Dp = 20
+    const val space24Dp = 24
+    const val space28Dp = 28
+    const val space32Dp = 32
 }

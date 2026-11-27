@@ -1,8 +1,9 @@
 package cn.sanchuang.jianqu.home
 
+import cn.sanchuang.jianqu.JianquSpacing
+
 import android.app.Activity
 import android.content.res.Configuration
-import android.graphics.Typeface
 import android.graphics.drawable.RippleDrawable
 import android.text.TextUtils
 import android.view.Gravity
@@ -87,7 +88,7 @@ internal class HomeScreen(
         }
         val root = homeColumn().apply {
             val side = homeLayout.sidePaddingDp
-            setPadding(dp(side), dp(10), dp(side), dp(10))
+            setPadding(dp(side), dp(JianquSpacing.space10Dp), dp(side), dp(JianquSpacing.space10Dp))
         }
         wallpaper.addView(root, FrameLayout.LayoutParams(-1, -1))
         val glass = HomeGlass(wallpaper)
@@ -97,10 +98,10 @@ internal class HomeScreen(
         val brand = homeRow().apply {
             minimumHeight = dp(48)
             addView(homeIcon(R.drawable.jq_home_brand_butterfly), LinearLayout.LayoutParams(dp(34), dp(34)))
-            addView(text("见趣 · 闺蜜机", 18f, ink, true).apply {
+            addView(text("见趣 · 闺蜜机", JianquTypography.bodyLargeSp, ink, true).apply {
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
-            }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(8) })
+            }, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(JianquSpacing.space8Dp) })
         }
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         if (developer != null) {
@@ -121,7 +122,7 @@ internal class HomeScreen(
         buildHomeHeaderActions(header)
         root.addView(header, LinearLayout.LayoutParams(-1, -2))
         if (previewUnenforced) {
-            root.addView(text("公开预览 · 租赁未接入", 12f, muted))
+            root.addView(text("公开预览 · 租赁未接入", JianquTypography.captionSp, muted))
         }
         val scroll = ScrollView(activity).apply {
             clipToPadding = false
@@ -129,7 +130,7 @@ internal class HomeScreen(
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             isVerticalScrollBarEnabled = false
         }
-        val body = homeColumn().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(4)) }
+        val body = homeColumn().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(JianquSpacing.space8Dp), 0, dp(JianquSpacing.space4Dp)) }
         scroll.addView(body)
         scroll.setOnScrollChangeListener { _, _, _, _, _ -> glass.invalidate() }
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -138,22 +139,22 @@ internal class HomeScreen(
         val top = homeRow().apply { gravity = Gravity.CENTER_VERTICAL }
         if (wide) {
             top.addView(homeGreeting().apply {
-                setPadding(dp(12), 0, dp(4), 0)
+                setPadding(dp(JianquSpacing.space12Dp), 0, dp(JianquSpacing.space4Dp), 0)
             }, LinearLayout.LayoutParams(0, -2, 1.1f))
             top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 0.7f).apply {
-                leftMargin = dp(12)
+                leftMargin = dp(JianquSpacing.space12Dp)
             })
             top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, 1.85f).apply {
-                leftMargin = dp(12)
+                leftMargin = dp(JianquSpacing.space12Dp)
             })
         } else {
             body.addView(homeGreeting().apply {
-                setPadding(dp(12), dp(8), dp(12), dp(8))
+                setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space8Dp))
             }, LinearLayout.LayoutParams(-1, -2))
             body.addSpace(homeLayout.greetingGapDp)
             top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, if (landscape) 1.85f else 1.65f))
             top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 1f).apply {
-                leftMargin = dp(10)
+                leftMargin = dp(JianquSpacing.space10Dp)
             })
         }
         body.addView(top, LinearLayout.LayoutParams(-1, -2))
@@ -182,7 +183,7 @@ internal class HomeScreen(
             format24Hour = "HH:mm"
             textSize = homeLayout.clockSp
             setTextColor(ink)
-            typeface = Typeface.create("serif", Typeface.NORMAL)
+            typeface = JianquTypography.displayTypeface()
             includeFontPadding = false
         })
         val dateRow = homeRow()
@@ -201,7 +202,7 @@ internal class HomeScreen(
                 background = JianquDrawables.shape(activity,
                     getColor(R.color.jq_status_stale), 3)
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, LinearLayout.LayoutParams(dp(6), dp(6)).apply { leftMargin = dp(6) })
+            }, LinearLayout.LayoutParams(dp(6), dp(6)).apply { leftMargin = dp(JianquSpacing.space6Dp) })
         }
         clock.addView(dateRow, LinearLayout.LayoutParams(-1, -2))
         val summary = (if (landscape) homeRow() else homeColumn()).apply {
@@ -237,16 +238,16 @@ internal class HomeScreen(
             if (forecast != null) setAutoSizeTextTypeUniformWithConfiguration(
                 11, homeLayout.weatherSp, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
         }, if (landscape) LinearLayout.LayoutParams(-1, -2) else LinearLayout.LayoutParams(0, -2, 1f).apply {
-            if (forecast != null) leftMargin = dp(8)
+            if (forecast != null) leftMargin = dp(JianquSpacing.space8Dp)
         })
         summary.addView(weather, if (landscape) LinearLayout.LayoutParams(0, -1, 0.85f)
-            else LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+            else LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space8Dp) })
         return summary
     }
 
     private fun companionPanel(glass: HomeGlass): View = homeColumn().apply {
         gravity = Gravity.CENTER
-        setPadding(dp(8), dp(8), dp(8), dp(8))
+        setPadding(dp(JianquSpacing.space8Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space8Dp))
         background = glass.surface(this)
         contentDescription = "小暖，进入本地模拟陪伴交互"
         isFocusable = true
@@ -256,7 +257,7 @@ internal class HomeScreen(
         addView(text(if (landscape) "和小暖聊聊吧…" else "和小暖聊聊吧", homeLayout.companionSp, ink).apply {
             gravity = Gravity.CENTER
             maxLines = 2
-        }, LinearLayout.LayoutParams(-1, -2).apply { if (!landscape) topMargin = dp(16) })
+        }, LinearLayout.LayoutParams(-1, -2).apply { if (!landscape) topMargin = dp(JianquSpacing.space16Dp) })
     }
 
     private fun homeGreeting(): View {
@@ -285,7 +286,7 @@ internal class HomeScreen(
     private fun makeQuickAction(action: HomeAction, glass: HomeGlass): View =
         homeColumn().apply {
             gravity = Gravity.CENTER
-            setPadding(dp(3), dp(4), dp(3), dp(4))
+            setPadding(dp(3), dp(JianquSpacing.space4Dp), dp(3), dp(JianquSpacing.space4Dp))
             background = glass.surface(this)
             isFocusable = true
             contentDescription = action.title
@@ -305,10 +306,10 @@ internal class HomeScreen(
                 isFocusable = true
                 contentDescription = description
                 tooltipText = description
-                addView(homeIcon(resource), FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
+                addView(homeIcon(resource), FrameLayout.LayoutParams(dp(JianquDimensions.utilityIconDp), dp(JianquDimensions.utilityIconDp), Gravity.CENTER))
                 setOnClickListener { action() }
             }
-            header.addView(button, LinearLayout.LayoutParams(dp(JianquDimensions.compactActionHeightDp), dp(JianquDimensions.compactActionHeightDp)).apply { leftMargin = dp(8) })
+            header.addView(button, LinearLayout.LayoutParams(dp(JianquDimensions.compactActionHeightDp), dp(JianquDimensions.compactActionHeightDp)).apply { leftMargin = dp(JianquSpacing.space8Dp) })
         }
         iconButton(R.drawable.ic_jq_app_search, "搜索应用") { onSearch() }
         HomeAction.entries.filter { it.header }.forEach { item ->

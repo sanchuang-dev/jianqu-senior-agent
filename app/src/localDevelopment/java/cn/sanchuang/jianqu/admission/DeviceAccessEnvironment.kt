@@ -1,5 +1,7 @@
 package cn.sanchuang.jianqu.admission
 
+import cn.sanchuang.jianqu.JianquDimensions
+
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
@@ -52,9 +54,9 @@ private class LocalDeviceAccess(context: Context) : DeviceAccessSource {
     override fun developerControl(activity: Activity, changed: () -> Unit): View {
         val ui = JianquColors(activity)
         val open = developerAction(activity, changed)
-        return JianquTypography.text(activity, "开发调试", 14f, ui.accentStrong, true).apply {
+        return JianquTypography.text(activity, "开发调试", JianquTypography.supportingSp, ui.accentStrong, true).apply {
             gravity = Gravity.CENTER
-            minHeight = (48 * resources.displayMetrics.density + .5f).toInt()
+            minHeight = (JianquDimensions.compactActionHeightDp * resources.displayMetrics.density + .5f).toInt()
             background = JianquDrawables.touch(activity, ui.surface, stroke = ui.border)
             isClickable = true
             isFocusable = true
@@ -85,9 +87,9 @@ private class LocalCheckout(private val confirmed: () -> Unit) : LeaseCheckout {
     override fun developmentActions(activity: Activity, changed: () -> Unit): View? {
         if (phase != CheckoutPhase.PENDING) return null
         val ui = JianquColors(activity)
-        return JianquTypography.text(activity, "模拟付款结果", 16f, ui.accentStrong, true).apply {
+        return JianquTypography.text(activity, "模拟付款结果", JianquTypography.bodySp, ui.accentStrong, true).apply {
             gravity = Gravity.CENTER
-            minHeight = (56 * resources.displayMetrics.density + .5f).toInt()
+            minHeight = (JianquDimensions.largeActionHeightDp * resources.displayMetrics.density + .5f).toInt()
             background = JianquDrawables.touch(activity, ui.accentSoft, stroke = ui.accentSoftBorder)
             setOnClickListener {
                 AlertDialog.Builder(activity)

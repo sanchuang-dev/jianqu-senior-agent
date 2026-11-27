@@ -1,5 +1,7 @@
 package cn.sanchuang.jianqu.system.apps
 
+import cn.sanchuang.jianqu.JianquSpacing
+
 import android.app.Activity
 import android.app.Dialog
 import android.content.pm.LauncherActivityInfo
@@ -50,7 +52,7 @@ internal class HomeAppSearchDialog(
     private fun text(value: String, size: Float, color: Int = ui.ink) =
         JianquTypography.text(activity, value, size, color, false)
     private fun action(value: String, description: String, click: () -> Unit) =
-        text(value, 24f, ui.muted).apply {
+        text(value, JianquTypography.titleCompactSp, ui.muted).apply {
             gravity = Gravity.CENTER
             contentDescription = description
             isFocusable = true
@@ -75,7 +77,7 @@ internal class HomeAppSearchDialog(
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         val outer = FrameLayout(activity)
         val panel = column().apply {
-            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setPadding(dp(JianquSpacing.space16Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space16Dp), dp(JianquSpacing.space12Dp))
             isClickable = true
         }
         panel.background = JianquGlassMaterial.OVERLAY.background(wallpaper, panel,
@@ -91,13 +93,13 @@ internal class HomeAppSearchDialog(
             setSingleLine(true)
             hint = "搜索已安装应用"
             contentDescription = "搜索已安装应用"
-            textSize = 20f
+            textSize = JianquTypography.headingSmallSp
             setTextColor(ui.ink)
             setHintTextColor(ui.muted)
             inputType = InputType.TYPE_CLASS_TEXT
             imeOptions = EditorInfo.IME_ACTION_SEARCH or EditorInfo.IME_FLAG_NO_EXTRACT_UI
             background = null
-            setPadding(dp(12), 0, dp(8), 0)
+            setPadding(dp(JianquSpacing.space12Dp), 0, dp(JianquSpacing.space8Dp), 0)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -115,7 +117,7 @@ internal class HomeAppSearchDialog(
         header.addView(iconAction(R.drawable.ic_jq_glass_close, "清除搜索") { input.text.clear() }, LinearLayout.LayoutParams(dp(48), dp(48)))
         panel.addView(header, LinearLayout.LayoutParams(-1, -2))
         panel.addView(View(activity).apply { setBackgroundColor(JianquGlassMaterial.separator(activity)) },
-            LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(8); bottomMargin = dp(8) })
+            LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(JianquSpacing.space8Dp); bottomMargin = dp(JianquSpacing.space8Dp) })
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
             isVerticalScrollBarEnabled = false
@@ -169,7 +171,7 @@ internal class HomeAppSearchDialog(
         results.removeAllViews()
         val apps = entries
         if (apps == null) {
-            results.addView(text(if (failed) activity.getString(R.string.apps_load_error) else "正在读取…", 16f, ui.muted))
+            results.addView(text(if (failed) activity.getString(R.string.apps_load_error) else "正在读取…", JianquTypography.bodySp, ui.muted))
             if (failed) results.addView(action("重试", "重试读取应用") {
                 failed = false
                 render()
@@ -180,8 +182,8 @@ internal class HomeAppSearchDialog(
         val query = input.text.toString()
         val matches = apps.filter { LauncherAppSearch.matches(query, it.label.toString(), it.componentName.packageName) }
         if (matches.isEmpty()) {
-            results.addView(text(if (query.isBlank()) activity.getString(R.string.empty_apps) else "没有找到匹配的应用", 16f, ui.muted).apply {
-                setPadding(dp(8), dp(16), 0, 0)
+            results.addView(text(if (query.isBlank()) activity.getString(R.string.empty_apps) else "没有找到匹配的应用", JianquTypography.bodySp, ui.muted).apply {
+                setPadding(dp(JianquSpacing.space8Dp), dp(JianquSpacing.space16Dp), 0, 0)
             })
             return
         }
@@ -193,7 +195,7 @@ internal class HomeAppSearchDialog(
                     background = android.graphics.drawable.RippleDrawable(
                         android.content.res.ColorStateList.valueOf(activity.getColor(R.color.jq_ripple)),
                         null, JianquDrawables.shape(activity, Color.WHITE, 12))
-                    setPadding(dp(4), dp(8), dp(4), dp(6))
+                    setPadding(dp(JianquSpacing.space4Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space4Dp), dp(JianquSpacing.space6Dp))
                     isFocusable = true
                     contentDescription = "打开 " + entry.label
                     setOnClickListener { onOpen(entry) }
@@ -203,11 +205,11 @@ internal class HomeAppSearchDialog(
                     scaleType = ImageView.ScaleType.FIT_CENTER
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }, LinearLayout.LayoutParams(dp(54), dp(54)))
-                item.addView(text(entry.label.toString(), 14f).apply {
+                item.addView(text(entry.label.toString(), JianquTypography.supportingSp).apply {
                     gravity = Gravity.CENTER
                     maxLines = 1
                     ellipsize = TextUtils.TruncateAt.END
-                    setPadding(0, dp(4), 0, 0)
+                    setPadding(0, dp(JianquSpacing.space4Dp), 0, 0)
                 }, LinearLayout.LayoutParams(-1, -2))
                 row.addView(item, LinearLayout.LayoutParams(0, dp(94), 1f))
             }

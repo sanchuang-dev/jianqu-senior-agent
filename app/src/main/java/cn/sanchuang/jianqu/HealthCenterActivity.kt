@@ -29,23 +29,23 @@ internal class HealthCenterActivity : ServicePreviewActivity() {
     private fun checkRow(parent: LinearLayout, title: String, desc: String, done: Boolean, toggle: () -> Unit) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = dp(60); setPadding(dp(12), dp(8), dp(12), dp(8))
+            minimumHeight = dp(60); setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space8Dp))
             background = JianquDrawables.touch(this@HealthCenterActivity, ui.surface, 12)
             isClickable = true; isFocusable = true
             contentDescription = "$title，${if (done) "已完成" else "待打卡"}"
             setOnClickListener { toggle(); render() }
         }
         val copy = column().apply {
-            line(this, title, 16f, ui.ink, true, 0)
-            line(this, desc, 12f, ui.muted, top = 5)
+            line(this, title, JianquTypography.bodySp, ui.ink, true, 0)
+            line(this, desc, JianquTypography.captionSp, ui.muted, top = 5)
         }
         row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(text(if (done) "✓ 已完成" else "打卡", 14f, green, true))
+        row.addView(text(if (done) "✓ 已完成" else "打卡", JianquTypography.supportingSp, green, true))
         add(parent, row, 9)
     }
     private fun progress(parent: LinearLayout, count: Int, total: Int) {
         line(parent, "$count / $total", 44f, green, true, 8)
-        line(parent, if (count == total) "示例计划已完成" else "今日打卡进度", 15f, green, top = 4)
+        line(parent, if (count == total) "示例计划已完成" else "今日打卡进度", JianquTypography.bodyCompactSp, green, top = 4)
         val segments = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             for (i in 0 until total) addView(View(this@HealthCenterActivity).apply {
@@ -60,13 +60,13 @@ internal class HealthCenterActivity : ServicePreviewActivity() {
     override fun render() {
         if (rehab) {
             val hero = panel(ui.healthIcon, null).apply {
-                line(this, "元气 · 康复计划", 17f, green, true, 0)
+                line(this, "元气 · 康复计划", JianquTypography.bodyEmphasisSp, green, true, 0)
                 line(this, "今日康复记录", 27f, ui.ink, true, 9)
                 progress(this, rehabChecked.size, rehabTasks.size)
-                line(this, "仅为示例，不是训练处方。实际项目和强度由专业人员确定。", 14f, ui.muted, top = 16)
+                line(this, "仅为示例，不是训练处方。实际项目和强度由专业人员确定。", JianquTypography.supportingSp, ui.muted, top = 16)
             }
             val body = column().apply {
-                line(this, "训练项目示例", 24f, ui.ink, true, 0)
+                line(this, "训练项目示例", JianquTypography.titleCompactSp, ui.ink, true, 0)
                 rehabTasks.forEachIndexed { i, title ->
                     checkRow(this, title, "演示完成记录", i in rehabChecked) {
                         toggle(rehabChecked, i)
@@ -81,16 +81,16 @@ internal class HealthCenterActivity : ServicePreviewActivity() {
             return
         }
         val hero = panel(ui.healthIcon, null).apply {
-            line(this, "元气 · 健康关怀", 17f, green, true, 0)
+            line(this, "元气 · 健康关怀", JianquTypography.bodyEmphasisSp, green, true, 0)
             line(this, "今日健康计划", 27f, ui.ink, true, 9)
             progress(this, checked.size, tasks.size)
             tasks.forEachIndexed { i, title ->
                 checkRow(this, title, details[i], i in checked) { toggle(checked, i) }
             }
-            line(this, "示例计划 · 不保存个人健康记录", 12f, ui.muted, top = 10)
+            line(this, "示例计划 · 不保存个人健康记录", JianquTypography.captionSp, ui.muted, top = 10)
         }
         val body = column().apply {
-            line(this, "健康服务", 24f, ui.ink, true, 0)
+            line(this, "健康服务", JianquTypography.titleCompactSp, ui.ink, true, 0)
             action(this, "康复训练", "查看康复计划示例", R.drawable.ic_home_stethoscope, ui.healthIcon) {
                 rehab = true; render()
             }

@@ -1,5 +1,7 @@
 package cn.sanchuang.jianqu.admission
 
+import cn.sanchuang.jianqu.JianquSpacing
+
 import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Canvas
@@ -40,10 +42,10 @@ internal class LeaseGateView(private val activity: Activity) {
         return view
     }
     private fun button(title: String, primary: Boolean, run: () -> Unit): TextView =
-        JianquTypography.text(activity, title, 17f, if (primary) ui.onAccent else ui.ink, true).apply {
+        JianquTypography.text(activity, title, JianquTypography.bodyEmphasisSp, if (primary) ui.onAccent else ui.ink, true).apply {
             gravity = Gravity.CENTER
             minHeight = dp(if (primary) JianquDimensions.largeActionHeightDp else JianquDimensions.compactActionHeightDp)
-            setPadding(dp(10), dp(8), dp(10), dp(8))
+            setPadding(dp(JianquSpacing.space10Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space10Dp), dp(JianquSpacing.space8Dp))
             background = JianquDrawables.touch(activity, if (primary) ui.accentStrong else ui.surface,
                 stroke = if (primary) null else ui.border)
             setOnClickListener { run() }
@@ -61,22 +63,22 @@ internal class LeaseGateView(private val activity: Activity) {
             copy(pane, value, size, color, top, display, bold).apply {
                 gravity = if (wide) Gravity.START else Gravity.CENTER
             }
-        intro("见趣 · 闺蜜机", 18f, bold = true)
+        intro("见趣 · 闺蜜机", JianquTypography.bodyLargeSp, bold = true)
         val headline = when (state) {
             DeviceAccess.NOT_RENTED -> if (pending) "即将开启新生活" else "美好生活，\n从见趣开始"
             DeviceAccess.EXPIRED -> "期待继续陪伴您"
             DeviceAccess.OFFLINE_BLOCKED -> "暂时无法验证租赁状态"
             else -> "正在检查设备状态"
         }
-        intro(if (!wide) headline.replace("\n", "") else headline, if (wide) 34f else 28f,
+        intro(if (!wide) headline.replace("\n", "") else headline, if (wide) JianquTypography.displayLargeSp else JianquTypography.displayCompactSp,
             top = if (wide) 28 else 16, display = true)
         intro(when (state) {
             DeviceAccess.NOT_RENTED -> "开通本机租赁，即可使用见趣桌面。"
             DeviceAccess.EXPIRED -> "设备租赁已到期，续租后即可恢复使用。"
             DeviceAccess.OFFLINE_BLOCKED -> "请检查网络后重新验证。"
             else -> "请稍后重新检查设备状态。"
-        }, 16f, ui.muted, 12)
-        if (developer) intro("本地开发 · 所有订单与授权均为模拟", 13f, ui.muted, 16)
+        }, JianquTypography.bodySp, ui.muted, 12)
+        if (developer) intro("本地开发 · 所有订单与授权均为模拟", JianquTypography.captionLargeSp, ui.muted, 16)
         return pane
     }
 
@@ -94,7 +96,7 @@ internal class LeaseGateView(private val activity: Activity) {
         }, FrameLayout.LayoutParams(-1, -1))
         val scroll = ScrollView(activity).apply { isFillViewport = true }
         root.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        val frame = FrameLayout(activity).apply { setPadding(dp(20), dp(14), dp(20), dp(14)) }
+        val frame = FrameLayout(activity).apply { setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space14Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space14Dp)) }
         scroll.addView(frame)
         val shell = column()
         frame.addView(shell, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
@@ -123,17 +125,17 @@ internal class LeaseGateView(private val activity: Activity) {
             if (pending) payment(card, checkout, changed) else rental(card, checkout, state, changed)
         } else {
             copy(card, if (state == DeviceAccess.OFFLINE_BLOCKED) "连接网络后重试" else "设备状态验证",
-                22f, display = true)
-            copy(card, "暂时不能进入桌面。", 16f, ui.muted, 12)
+                JianquTypography.sectionSp, display = true)
+            copy(card, "暂时不能进入桌面。", JianquTypography.bodySp, ui.muted, 12)
             action(card, "重新检查", true, 20, retry)
         }
 
         // Secondary actions belong with the welcome copy, not in a full-width button bar.
         val utilities = row().apply { gravity = if (wide) Gravity.START else Gravity.CENTER }
         fun utility(icon: Int, title: String, description: String, click: () -> Unit) =
-            JianquIcons.label(activity, icon, title, 15f, ui.ink, bold = false).apply {
+            JianquIcons.label(activity, icon, title, JianquTypography.bodyCompactSp, ui.ink, bold = false).apply {
                 minimumHeight = dp(JianquDimensions.compactActionHeightDp)
-                setPadding(dp(8), 0, dp(8), 0)
+                setPadding(dp(JianquSpacing.space8Dp), 0, dp(JianquSpacing.space8Dp), 0)
                 background = utilityFeedback()
                 contentDescription = description
                 setOnClickListener { click() }
@@ -141,7 +143,7 @@ internal class LeaseGateView(private val activity: Activity) {
             }
         fun addUtility(view: View) {
             utilities.addView(view, LinearLayout.LayoutParams(-2, dp(JianquDimensions.compactActionHeightDp)).apply {
-                if (utilities.childCount > 0) leftMargin = dp(12)
+                if (utilities.childCount > 0) leftMargin = dp(JianquSpacing.space12Dp)
             })
         }
         addUtility(utility(R.drawable.ic_jq_network, "网络", "网络设置", network))
@@ -150,15 +152,15 @@ internal class LeaseGateView(private val activity: Activity) {
             it.background = utilityFeedback()
             if (it is TextView) {
                 it.text = "调试"
-                it.textSize = 15f
-                it.setTypeface(null, android.graphics.Typeface.NORMAL)
+                it.textSize = JianquTypography.bodyCompactSp
+                JianquTypography.applyWeight(it, false)
                 it.setTextColor(ui.ink)
                 val icon = activity.getDrawable(R.drawable.ic_jq_development)?.mutate()
                 icon?.setTint(ui.ink)
                 it.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
-                it.compoundDrawablePadding = dp(7)
+                it.compoundDrawablePadding = dp(JianquDimensions.utilityIconGapDp)
                 it.gravity = Gravity.CENTER
-                it.setPadding(dp(8), 0, dp(8), 0)
+                it.setPadding(dp(JianquSpacing.space8Dp), 0, dp(JianquSpacing.space8Dp), 0)
             }
             addUtility(it)
         }
@@ -186,22 +188,22 @@ internal class LeaseGateView(private val activity: Activity) {
         copy(card, "设备租赁", 19f, bold = true)
         val price = row()
         price.addView(JianquTypography.text(activity, "¥" + LeaseTerm.MONTH.exampleAmountYuan, 42f, ui.ink, true))
-        price.addView(JianquTypography.text(activity, " / 月", 17f, ui.muted, false))
+        price.addView(JianquTypography.text(activity, " / 月", JianquTypography.bodyEmphasisSp, ui.muted, false))
         add(card, price, 3)
-        copy(card, "本机 JQ-DEMO-01 · 演示设备", 13f, ui.muted, 2)
+        copy(card, "本机 JQ-DEMO-01 · 演示设备", JianquTypography.captionLargeSp, ui.muted, 2)
         when (checkout.phase) {
-            CheckoutPhase.FAILED -> copy(card, "模拟付款失败，请重新发起。", 15f, ui.danger, 8)
-            CheckoutPhase.TIMED_OUT -> copy(card, "模拟订单已超时，请重新发起。", 15f, ui.danger, 8)
-            CheckoutPhase.CANCELLED -> copy(card, "订单已取消（演示）。", 15f, ui.muted, 8)
+            CheckoutPhase.FAILED -> copy(card, "模拟付款失败，请重新发起。", JianquTypography.bodyCompactSp, ui.danger, 8)
+            CheckoutPhase.TIMED_OUT -> copy(card, "模拟订单已超时，请重新发起。", JianquTypography.bodyCompactSp, ui.danger, 8)
+            CheckoutPhase.CANCELLED -> copy(card, "订单已取消（演示）。", JianquTypography.bodyCompactSp, ui.muted, 8)
             else -> Unit
         }
-        copy(card, "选择租期", 15f, ui.muted, 12, bold = true)
+        copy(card, "选择租期", JianquTypography.bodyCompactSp, ui.muted, 12, bold = true)
         LeaseTerm.entries.chunked(2).forEach { terms ->
             val choices = row()
             terms.forEachIndexed { index, term ->
                 val selected = term == checkout.term
                 val choice = JianquTypography.text(activity, term.label + "  ¥" + term.exampleAmountYuan,
-                    15f, if (selected) ui.accentStrong else ui.ink, selected).apply {
+                    JianquTypography.bodyCompactSp, if (selected) ui.accentStrong else ui.ink, selected).apply {
                     gravity = Gravity.CENTER
                     minHeight = dp(JianquDimensions.compactActionHeightDp)
                     background = JianquDrawables.touch(activity, if (selected) ui.accentSoft else activity.getColor(R.color.jq_lease_glass_choice),
@@ -210,32 +212,32 @@ internal class LeaseGateView(private val activity: Activity) {
                     setOnClickListener { checkout.choose(term); changed() }
                     isFocusable = true
                 }
-                choices.addView(choice, LinearLayout.LayoutParams(0, -2, 1f).apply { if (index > 0) leftMargin = dp(8) })
+                choices.addView(choice, LinearLayout.LayoutParams(0, -2, 1f).apply { if (index > 0) leftMargin = dp(JianquSpacing.space8Dp) })
             }
             add(card, choices, 6)
         }
         action(card, (if (state == DeviceAccess.EXPIRED) "续租" else "立即开通") + " · ¥" +
             checkout.term.exampleAmountYuan, true, 12) { checkout.start(); changed() }
-        add(card, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码付款 · 演示", 14f,
+        add(card, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码付款 · 演示", JianquTypography.supportingSp,
             ui.muted, ui.wechatBrand, false), 8)
     }
 
     private fun payment(card: LinearLayout, checkout: LeaseCheckout, changed: () -> Unit) {
-        add(card, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码付款 · 演示", 20f,
+        add(card, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码付款 · 演示", JianquTypography.headingSmallSp,
             ui.ink, ui.wechatBrand).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL })
         val summary = row()
         val code = DemoCode(activity)
         val size = if (wide) 98 else 128
         summary.addView(code, LinearLayout.LayoutParams(dp(size), dp(size)))
         val details = column()
-        copy(details, "¥" + checkout.term.exampleAmountYuan, if (wide) 34f else 38f, ui.ink, bold = true)
-        copy(details, checkout.term.label + " · 等待付款确认", 15f, ui.muted, 5)
-        copy(details, "不可扫码付款", 14f, ui.accentStrong, 5, bold = true)
-        summary.addView(details, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(14) })
+        copy(details, "¥" + checkout.term.exampleAmountYuan, if (wide) JianquTypography.displayLargeSp else 38f, ui.ink, bold = true)
+        copy(details, checkout.term.label + " · 等待付款确认", JianquTypography.bodyCompactSp, ui.muted, 5)
+        copy(details, "不可扫码付款", JianquTypography.supportingSp, ui.accentStrong, 5, bold = true)
+        summary.addView(details, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(JianquSpacing.space14Dp) })
         add(card, summary, 12)
         action(card, "重新查询付款状态", true, 12) { checkout.recheck(); changed() }
         checkout.developmentActions(activity, changed)?.let { add(card, it, 8) }
-        val cancel = JianquTypography.text(activity, "取消订单", 15f, ui.muted, true).apply {
+        val cancel = JianquTypography.text(activity, "取消订单", JianquTypography.bodyCompactSp, ui.muted, true).apply {
             gravity = Gravity.CENTER
             minHeight = dp(JianquDimensions.compactActionHeightDp)
             background = JianquDrawables.touch(activity, ui.surface)
@@ -248,9 +250,9 @@ internal class LeaseGateView(private val activity: Activity) {
     private fun showSupport() {
         val body = column().apply {
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(24), dp(12), dp(24), dp(10))
+            setPadding(dp(JianquSpacing.space24Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space24Dp), dp(JianquSpacing.space10Dp))
         }
-        add(body, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码联系客服", 18f, ui.ink, ui.wechatBrand))
+        add(body, JianquIcons.label(activity, R.drawable.ic_jq_wechat, "微信扫码联系客服", JianquTypography.bodyLargeSp, ui.ink, ui.wechatBrand))
         val placeholder = FrameLayout(activity).apply {
             background = JianquDrawables.shape(activity, ui.surfaceSecondary, JianquDimensions.cardRadiusDp)
             addView(JianquIcons.image(activity, R.drawable.ic_jq_qr_code, ui.muted),
@@ -259,10 +261,10 @@ internal class LeaseGateView(private val activity: Activity) {
         }
         body.addView(placeholder, LinearLayout.LayoutParams(dp(148), dp(148)).apply {
             gravity = Gravity.CENTER_HORIZONTAL
-            topMargin = dp(16)
+            topMargin = dp(JianquSpacing.space16Dp)
         })
-        copy(body, "客服二维码尚未配置", 16f, ui.ink, 12, bold = true).gravity = Gravity.CENTER
-        copy(body, "请联系设备提供方。当前图案不可扫描。", 14f, ui.muted, 8).gravity = Gravity.CENTER
+        copy(body, "客服二维码尚未配置", JianquTypography.bodySp, ui.ink, 12, bold = true).gravity = Gravity.CENTER
+        copy(body, "请联系设备提供方。当前图案不可扫描。", JianquTypography.supportingSp, ui.muted, 8).gravity = Gravity.CENTER
         android.app.AlertDialog.Builder(activity)
             .setView(body)
             .setPositiveButton("关闭", null)
@@ -277,7 +279,7 @@ internal class LeaseGateView(private val activity: Activity) {
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
             canvas.drawColor(colors.surfaceSecondary)
-            val cell = width / 17f
+            val cell = width / JianquTypography.bodyEmphasisSp
             paint.color = colors.ink
             for (y in 2..14) for (x in 2..14) {
                 if ((x * 7 + y * 11 + x * y) % 5 < 2 && x + y !in 13..19) {

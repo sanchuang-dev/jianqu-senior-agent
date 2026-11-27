@@ -95,7 +95,7 @@ class SosActivity : Activity() {
 
     private fun button(text: String, primary: Boolean = false,
                        onClick: () -> Unit): TextView =
-        label(text, 16f, if (primary) ui.onAccent else accent, true).apply {
+        label(text, JianquTypography.bodySp, if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
             minHeight = dp(JianquDimensions.minActionHeightDp)
             setPadding(dp(11), dp(9), dp(11), dp(9))
@@ -127,23 +127,23 @@ class SosActivity : Activity() {
 
     private fun warning() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(17), dp(13), dp(17), dp(16))
+        setPadding(dp(17), dp(13), dp(17), dp(JianquSpacing.space16Dp))
         background = JianquDrawables.shape(this@SosActivity, warningBackground,
             JianquDimensions.cardRadiusDp, warningBorder)
-        line(this, "SOS 当前不可用于真实求救", 20f, danger, true, 0)
+        line(this, "SOS 当前不可用于真实求救", JianquTypography.headingSmallSp, danger, true, 0)
         line(this, "未接入报警、护理站或家属通知。任何演示结果都不代表救助已经送达。",
-            15f, danger, false, 9)
+            JianquTypography.bodyCompactSp, danger, false, 9)
     }
 
     private fun guidance() = panel().apply {
         line(this, "如果现在真的需要帮助", JianquTypography.headingCompactSp, ink, true, 0)
-        line(this, "立即呼叫附近的工作人员或其他在场的人。", 16f, ink, marginTop = 17)
+        line(this, "立即呼叫附近的工作人员或其他在场的人。", JianquTypography.bodySp, ink, marginTop = 17)
         line(this, "请使用能够正常拨号的可靠电话，拨打所在地的急救电话。",
-            16f, ink, marginTop = 13)
+            JianquTypography.bodySp, ink, marginTop = 13)
         line(this, "本机未确认有电话功能，请勿依赖这里的 SOS 按钮等待救援。",
-            15f, danger, true, 15)
+            JianquTypography.bodyCompactSp, danger, true, 15)
         line(this, "未来由家属还是护理站接应、回执如何确认、备用求助渠道等，仍须另行决定和验证。",
-            14f, muted, marginTop = 18)
+            JianquTypography.supportingSp, muted, marginTop = 18)
     }
 
     private fun stepTitle() = when (step) {
@@ -186,14 +186,14 @@ class SosActivity : Activity() {
                 leftMargin = dp(9)
             })
         parent.addView(row, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(10)
+            topMargin = dp(JianquSpacing.space10Dp)
         })
     }
 
     private fun process() = panel().apply {
-        line(this, "原型演示 · 没有真实求助请求", 14f, danger, true, 0)
+        line(this, "原型演示 · 没有真实求助请求", JianquTypography.supportingSp, danger, true, 0)
         line(this, stepTitle(), JianquTypography.headingCompactSp, ink, true, 12)
-        line(this, stepMessage(), 16f, muted, marginTop = 16)
+        line(this, stepMessage(), JianquTypography.bodySp, muted, marginTop = 16)
 
         when (step) {
             Step.INTRO -> {
@@ -209,8 +209,8 @@ class SosActivity : Activity() {
                 action(this, "取消演示", top = 11) { navigate(Step.CANCELED) }
             }
             Step.SIMULATED_PROCESSING -> {
-                line(this, "手动选择一个模拟结果", 17f, ink, true, 22)
-                line(this, "全部为假设状态，不代表已检查设备或联系人。", 14f, muted, marginTop = 8)
+                line(this, "手动选择一个模拟结果", JianquTypography.bodyEmphasisSp, ink, true, 22)
+                line(this, "全部为假设状态，不代表已检查设备或联系人。", JianquTypography.supportingSp, muted, marginTop = 8)
                 scenarioChoice(this, "模拟未送达", Step.NOT_DELIVERED,
                     "模拟网络不可用", Step.NO_NETWORK)
                 scenarioChoice(this, "模拟无联系人", Step.NO_CONTACT,
@@ -218,7 +218,7 @@ class SosActivity : Activity() {
                 action(this, "取消模拟请求", top = 17) { navigate(Step.CANCELED) }
             }
             else -> {
-                line(this, "如需真实救助，请立即使用左侧／上方所列的可靠方式。", 15f, danger,
+                line(this, "如需真实救助，请立即使用左侧／上方所列的可靠方式。", JianquTypography.bodyCompactSp, danger,
                     true, 19)
                 action(this, "重新开始演示", top = 22) { navigate(Step.INTRO) }
                 action(this, "返回桌面", primary = true, top = 11) { leave() }
@@ -229,16 +229,16 @@ class SosActivity : Activity() {
     private fun header() = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(5), dp(16), dp(5))
+        setPadding(dp(JianquSpacing.space16Dp), dp(5), dp(JianquSpacing.space16Dp), dp(5))
         addView(button("‹") { leave() }.apply {
-            textSize = 31f
+            textSize = JianquTypography.backGlyphSp
             contentDescription = "返回桌面"
         }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        addView(label("SOS 紧急求助", 23f, ink, true),
+        addView(label("SOS 紧急求助", JianquTypography.toolbarTitleSp, ink, true),
             LinearLayout.LayoutParams(0, dp(56), 1f).apply {
-                leftMargin = dp(14)
+                leftMargin = dp(JianquSpacing.space14Dp)
             })
-        if (wide()) addView(label("未接入真实救援 · 仅演示", 14f, danger, true))
+        if (wide()) addView(label("未接入真实救援 · 仅演示", JianquTypography.supportingSp, danger, true))
     }
 
     private fun render() {
@@ -266,7 +266,7 @@ class SosActivity : Activity() {
         }
         if (horizontal) {
             columns.addView(guidance(), LinearLayout.LayoutParams(0, -2, .84f).apply {
-                rightMargin = dp(14)
+                rightMargin = dp(JianquSpacing.space14Dp)
             })
             columns.addView(process(), LinearLayout.LayoutParams(0, -2, 1.16f))
         } else {
@@ -276,13 +276,13 @@ class SosActivity : Activity() {
             })
         }
         content.addView(columns, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(14)
+            topMargin = dp(JianquSpacing.space14Dp)
         })
         scroller.addView(content)
         root.addView(scroller, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(label("本地 UI 原型 · 未发送、未报警、未通知任何人", 13f, danger).apply {
+        root.addView(label("本地 UI 原型 · 未发送、未报警、未通知任何人", JianquTypography.captionLargeSp, danger).apply {
             gravity = Gravity.CENTER
-            setPadding(dp(10), 0, dp(10), 0)
+            setPadding(dp(JianquSpacing.space10Dp), 0, dp(JianquSpacing.space10Dp), 0)
         }, LinearLayout.LayoutParams(-1, dp(38)))
 
         setContentView(root)

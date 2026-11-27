@@ -19,8 +19,8 @@ internal object JianquIcons {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
         fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
-        addView(image(context, drawable, iconColor), LinearLayout.LayoutParams(dp(24), dp(24)))
+        addView(image(context, drawable, iconColor), LinearLayout.LayoutParams(dp(JianquDimensions.utilityIconDp), dp(JianquDimensions.utilityIconDp)))
         addView(JianquTypography.text(context, title, size, color, bold),
-            LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(7) })
+            LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(JianquDimensions.utilityIconGapDp) })
     }
 }
