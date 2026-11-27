@@ -299,44 +299,29 @@ class LauncherActivity : Activity() {
         scroll.setOnScrollChangeListener { _, _, _, _, _ -> glass.invalidate() }
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        if (landscape && resources.configuration.screenWidthDp >= 660) {
-            val top = homeRow().apply { gravity = Gravity.TOP }
-            val companion = homeColumn()
-            val environment = homeColumn()
-            buildCompanion(companion, glass)
-            buildEnvironment(environment, glass)
-            top.addView(companion, LinearLayout.LayoutParams(0, -2, 1f))
-            top.addView(environment, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(16) })
-            body.addView(top, LinearLayout.LayoutParams(-1, -2))
-        } else if (!landscape) {
-            val top = homeRow()
-            val environment = homeColumn()
-            buildEnvironment(environment, glass)
-            top.addView(environment, LinearLayout.LayoutParams(0, -2, 1.85f))
-            val companion = homeColumn().apply {
-                gravity = Gravity.CENTER
-                setPadding(dp(8), dp(8), dp(8), dp(8))
-                background = glass.surface(this)
-                contentDescription = "小暖，进入本地模拟陪伴交互"
-                isFocusable = true
-                setOnClickListener { openCompanion() }
-                addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(64), dp(64)))
-                addView(text("和小暖聊聊吧…", 15f, ink).apply {
-                    gravity = Gravity.CENTER
-                    maxLines = 2
-                }, LinearLayout.LayoutParams(-1, -2))
-            }
-            top.addView(companion, LinearLayout.LayoutParams(0, -1, 1f).apply { leftMargin = dp(10) })
+        val wide = landscape && resources.configuration.screenWidthDp >= 660
+        val top = homeRow().apply { gravity = Gravity.CENTER_VERTICAL }
+        if (wide) {
+            top.addView(homeGreeting().apply {
+                setPadding(dp(12), 0, dp(4), 0)
+            }, LinearLayout.LayoutParams(0, -2, 1.1f))
+            top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 0.7f).apply {
+                leftMargin = dp(12)
+            })
+            top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, 1.85f).apply {
+                leftMargin = dp(12)
+            })
+        } else {
             body.addView(homeGreeting().apply {
                 setPadding(dp(12), dp(8), dp(12), dp(8))
             }, LinearLayout.LayoutParams(-1, -2))
             body.addSpace(10)
-            body.addView(top, LinearLayout.LayoutParams(-1, -2))
-        } else {
-            buildEnvironment(body, glass)
-            body.addSpace(10)
-            buildCompanion(body, glass)
+            top.addView(environmentPanel(glass), LinearLayout.LayoutParams(0, -2, 1.85f))
+            top.addView(companionPanel(glass), LinearLayout.LayoutParams(0, -1, 1f).apply {
+                leftMargin = dp(10)
+            })
         }
+        body.addView(top, LinearLayout.LayoutParams(-1, -2))
         body.addSpace(12)
         buildQuickActions(body, glass)
     }
@@ -352,7 +337,7 @@ class LauncherActivity : Activity() {
         else -> 0
     }
 
-    private fun buildEnvironment(body: LinearLayout, glass: HomeGlass) {
+    private fun environmentPanel(glass: HomeGlass): View {
         val place = WeatherCity.place(this)
         val forecast = place?.let { WeatherData.cached(this, it) }
         val clock = homeColumn()
@@ -390,6 +375,7 @@ class LauncherActivity : Activity() {
             startActivity(Intent(this, WeatherActivity::class.java))
         }
         val summary = homeRow().apply {
+            minimumHeight = dp(104)
             val side = if (landscape) 14 else 10
             setPadding(dp(side), dp(10), dp(side), dp(10))
             background = glass.surface(this)
@@ -419,27 +405,21 @@ class LauncherActivity : Activity() {
                 11, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP)
         }, LinearLayout.LayoutParams(-1, -2))
         summary.addView(weather, LinearLayout.LayoutParams(0, -1, 0.85f))
-        body.addView(summary, LinearLayout.LayoutParams(-1, -2))
-
+        return summary
     }
 
-    private fun buildCompanion(body: LinearLayout, glass: HomeGlass) {
-        val tile = homeColumn().apply {
-            setPadding(dp(12), dp(if (landscape && resources.configuration.screenWidthDp >= 660) 0 else 8), dp(12), dp(8))
-            gravity = Gravity.CENTER_VERTICAL
-            contentDescription = "小暖，进入本地模拟陪伴交互"
-            isFocusable = true
-            setOnClickListener { openCompanion() }
-        }
-        tile.addView(homeGreeting())
-        val talk = homeRow().apply {
-            background = glass.surface(this, 24)
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-        talk.addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(32), dp(32)))
-        talk.addView(text("和小暖聊聊吧…", 16f, ink), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = dp(8) })
-        tile.addView(talk, LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(12) })
-        body.addView(tile, LinearLayout.LayoutParams(-1, -2))
+    private fun companionPanel(glass: HomeGlass): View = homeColumn().apply {
+        gravity = Gravity.CENTER
+        setPadding(dp(8), dp(8), dp(8), dp(8))
+        background = glass.surface(this)
+        contentDescription = "小暖，进入本地模拟陪伴交互"
+        isFocusable = true
+        setOnClickListener { openCompanion() }
+        addView(homeIcon(R.drawable.jq_home_voice), LinearLayout.LayoutParams(dp(64), dp(64)))
+        addView(text("和小暖聊聊吧…", 15f, ink).apply {
+            gravity = Gravity.CENTER
+            maxLines = 2
+        }, LinearLayout.LayoutParams(-1, -2))
     }
 
     private fun openCompanion() {
