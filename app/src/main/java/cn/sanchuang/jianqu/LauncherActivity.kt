@@ -31,6 +31,7 @@ import cn.sanchuang.jianqu.admission.DeviceAccessEnvironment
 import cn.sanchuang.jianqu.admission.LeaseGateView
 import cn.sanchuang.jianqu.home.HomeAction
 import cn.sanchuang.jianqu.home.HomeScreen
+import cn.sanchuang.jianqu.settings.SettingsScreen
 import cn.sanchuang.jianqu.system.apps.HomeAppSearchDialog
 import cn.sanchuang.jianqu.system.apps.LauncherAppCatalog
 import cn.sanchuang.jianqu.system.apps.LauncherAppSearch
@@ -44,7 +45,8 @@ import java.util.concurrent.RejectedExecutionException
  */
 class LauncherActivity : Activity() {
     private val ui = JianquColors(this)
-    private enum class Page { HOME, ALL_APPS, SETTINGS, HELP, RENTAL_GATE }
+    private enum class Page { HOME, ALL_APPS, SETTINGS, RENTAL_GATE }
+    private var settingsSection = SettingsScreen.Section.ENVIRONMENT
     private val access by lazy { DeviceAccessEnvironment.open(this) }
     private var renderedGateState: DeviceAccess? = null
     private val desktopBars by lazy { LauncherSystemBars(window) }
@@ -73,12 +75,21 @@ class LauncherActivity : Activity() {
         super.onCreate(savedInstanceState)
         appCatalogAdapter = LauncherAppCatalog.open(this, main) { refreshApps() }
         appCatalogAdapter.start()
-        showHome()
+        settingsSection = SettingsScreen.Section.entries.firstOrNull {
+            it.name == savedInstanceState?.getString("settings_section")
+        } ?: SettingsScreen.Section.ENVIRONMENT
+        if (savedInstanceState?.getBoolean("settings_open") == true) showSettings() else showHome()
         if (savedInstanceState == null && !uiPreferences.getBoolean("intro_seen", false)) {
             main.post {
                 if (!isFinishing && !isDestroyed && page == Page.HOME) showFirstUseGuide()
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("settings_open", page == Page.SETTINGS)
+        outState.putString("settings_section", settingsSection.name)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -123,7 +134,6 @@ class LauncherActivity : Activity() {
         when (page) {
             Page.RENTAL_GATE -> showHome()
             Page.ALL_APPS, Page.SETTINGS -> showHome()
-            Page.HELP -> showSettings()
             Page.HOME -> Unit // A launcher never closes itself on Back.
         }
     }
@@ -221,7 +231,10 @@ class LauncherActivity : Activity() {
             HomeAction.CONTENT_HEALTH -> startActivity(Intent(this, HealthCenterActivity::class.java))
             HomeAction.CONTENT_NEWS -> openContent(ContentGalleryActivity.NEWS)
             HomeAction.SERVICES -> startActivity(Intent(this, DemoActivity::class.java))
-            HomeAction.SETTINGS -> showSettings()
+            HomeAction.SETTINGS -> {
+                settingsSection = SettingsScreen.Section.ENVIRONMENT
+                showSettings()
+            }
 
         }
     }
@@ -234,107 +247,29 @@ class LauncherActivity : Activity() {
     private fun showSettings() {
         if (!admit()) return
         page = Page.SETTINGS
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(backgroundColor)
-            setPadding(dp(19), dp(JianquSpacing.space16Dp), dp(19), dp(JianquSpacing.space16Dp))
-        }
         desktopBars.apply(edgeToEdge = false)
-        setContentView(root)
-        root.addView(text("‹  返回桌面", JianquTypography.bodyLargeSp, terracotta, true).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { showHome() }
-        }, LinearLayout.LayoutParams(-1, dp(48)))
-        root.addView(JianquTypography.display(this, "设置", JianquTypography.pageTitleSp, ink), LinearLayout.LayoutParams(-1, dp(58)))
-        root.addView(text("管理本机桌面与系统设置", JianquTypography.bodySp, muted),
-            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(JianquSpacing.space14Dp) })
-
-        val scroll = ScrollView(this).apply { isFillViewport = true }
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(JianquSpacing.space12Dp), 0, dp(JianquSpacing.space16Dp))
-        }
-        scroll.addView(content)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        val preferences = settingsGroup(content, "桌面偏好")
-        val city = WeatherCity.current(this)
-        addSettingsItem(preferences, "天气城市",
-            if (city.isEmpty()) "尚未选择城市 · 不读取设备定位" else "$city · 点击更换") {
-            showCityDialog()
-        }
-        addSettingsItem(preferences, "Wi-Fi 与网络", "打开 Android 的网络设置") {
-            openAndroidSettings(Settings.ACTION_WIFI_SETTINGS)
-        }
-        addSettingsItem(preferences, "屏幕与亮度", "打开 Android 的显示设置") {
-            openAndroidSettings(Settings.ACTION_DISPLAY_SETTINGS)
-        }
-        addSettingsItem(preferences, "默认主屏幕", "选择或更改 Android HOME 应用") {
-            openAndroidSettings(Settings.ACTION_HOME_SETTINGS)
-        }
-
-        content.addSpace(JianquSpacing.space20Dp)
-        val device = settingsGroup(content, "了解设备")
-        addSettingsItem(device, "首次使用与帮助", "默认桌面、全部应用与安全提示") {
-            showHelp()
-        }
         val version = runCatching {
             packageManager.getPackageInfo(packageName, 0).versionName
         }.getOrNull() ?: "未知"
-        addSettingsItem(device, "关于闺蜜机", "版本 $version · 原型演示") {
-            AlertDialog.Builder(this)
-                .setTitle("闺蜜机（演示）")
-                .setMessage("版本 $version\n普通第三方 Android Launcher。本期小暖和设备订阅为本地模拟，其他服务需分别接入。")
-                .setPositiveButton("知道了", null)
-                .show()
-        }
+        setContentView(SettingsScreen(
+            activity = this,
+            initialSection = settingsSection,
+            city = WeatherCity.current(this),
+            version = version,
+            onSectionChanged = { settingsSection = it },
+            onBack = ::showHome,
+            onSystemSettings = { if (admit()) openAndroidSettings(it) },
+            onCity = { if (admit()) WeatherCity.showPicker(this) { showSettings() } },
+            onHelp = { if (admit()) showHelp() },
+            onAbout = {
+                if (admit()) AlertDialog.Builder(this)
+                    .setTitle("见趣 · 闺蜜机")
+                    .setMessage("版本 $version\n\n当前为预览版本，小暖与租赁尚未接入真实服务。")
+                    .setPositiveButton("知道了", null)
+                    .show()
+            }
+        ).render())
     }
-
-    private fun settingsGroup(parent: LinearLayout, title: String): LinearLayout {
-        parent.addView(JianquTypography.display(this, title, JianquTypography.sectionSp, ink),
-            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(JianquSpacing.space10Dp) })
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = shape(ui.surface, JianquDimensions.cardRadiusDp, divider)
-            setPadding(dp(1), dp(1), dp(1), dp(1))
-            clipToOutline = true
-            parent.addView(this, LinearLayout.LayoutParams(-1, -2))
-        }
-    }
-
-    private fun addSettingsItem(
-        container: LinearLayout,
-        title: String,
-        description: String,
-        action: () -> Unit
-    ) {
-        if (container.childCount > 0) {
-            container.addView(View(this).apply { setBackgroundColor(divider) },
-                LinearLayout.LayoutParams(-1, dp(1)).apply { leftMargin = dp(JianquSpacing.space18Dp); rightMargin = dp(JianquSpacing.space18Dp) })
-        }
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = dp(76)
-            setPadding(dp(JianquSpacing.space18Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space18Dp), dp(JianquSpacing.space12Dp))
-            background = touch(ui.surface, 0)
-            isClickable = true
-            isFocusable = true
-            contentDescription = "$title，$description"
-            setOnClickListener { action() }
-        }
-        val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        copy.addView(text(title, JianquTypography.bodyLargeSp, ink, true))
-        copy.addView(text(description, JianquTypography.supportingSp, muted),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space6Dp) })
-        row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(text("›", 26f, muted))
-        container.addView(row, LinearLayout.LayoutParams(-1, -2))
-    }
-
-    private fun showCityDialog() = WeatherCity.showPicker(this) { showSettings() }
 
     private fun openAndroidSettings(action: String) {
         try {
@@ -347,50 +282,17 @@ class LauncherActivity : Activity() {
 
     private fun showHelp() {
         if (!admit()) return
-        page = Page.HELP
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(backgroundColor)
-            setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space16Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space20Dp))
-        }
-        desktopBars.apply(edgeToEdge = false)
-        setContentView(root)
-        root.addView(text("‹  返回设置", JianquTypography.bodyLargeSp, terracotta, true).apply {
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { showSettings() }
-        }, LinearLayout.LayoutParams(-1, dp(49)))
-        root.addView(JianquTypography.display(this, "首次使用与帮助", JianquTypography.pageTitleSp, ink),
-            LinearLayout.LayoutParams(-1, dp(70)))
-        val scroll = ScrollView(this)
-        val items = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        scroll.addView(items)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        listOf(
-            "01 · 设为默认桌面" to "系统首次询问时选择「闺蜜机（演示）」；也可从设置中的「默认主屏幕」进入 Android 选择页。",
-            "02 · 找到全部应用" to "首页右上角「全部应用」展示本机可启动的真实 App，支持输入名称搜索，点图标即可打开。",
-            "03 · 返回设备桌面" to "使用设备的 Home 键回到闺蜜机主页；在子页面点击左上角返回按钮。",
-            "04 · 服务与求助说明" to "家人视频与 SOS 尚未接入真实服务。SOS 当前不能报警或通知护理人员；紧急情况请联系现场人员或使用可靠电话。"
-        ).forEach { (heading, detail) ->
-            val block = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(17), dp(JianquSpacing.space18Dp), dp(17), dp(JianquSpacing.space18Dp))
-                background = shape(ui.surface, 14, divider)
-            }
-            block.addView(text(heading, JianquTypography.bodyLargeSp, ink, true))
-            block.addView(text(detail, JianquTypography.bodyCompactSp, muted),
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space10Dp) })
-            items.addView(block, LinearLayout.LayoutParams(-1, -2).apply {
-                bottomMargin = dp(JianquSpacing.space12Dp)
-            })
-        }
+        AlertDialog.Builder(this)
+            .setTitle("使用帮助")
+            .setMessage("按设备 Home 键返回桌面；在首页右上角搜索或打开全部应用。\n\n家人通话与 SOS 尚未接入真实服务。紧急情况请联系现场人员或使用可靠电话。")
+            .setPositiveButton("知道了", null)
+            .show()
     }
 
     private fun showFirstUseGuide() {
         AlertDialog.Builder(this)
             .setTitle("欢迎使用闺蜜机")
-            .setMessage("这是 Android 桌面原型。\n\n• 想查找其他 App？点「全部应用」。\n• 按设备 Home 键可返回闺蜜机。\n• 在「设置」里可选择默认主屏幕和城市。\n\n通话与 SOS 尚未接入真实服务。")
+            .setMessage("按设备 Home 键返回桌面，使用右上角搜索或打开全部应用。\n\n通话与 SOS 尚未接入真实服务。")
             .setPositiveButton("开始使用") { _, _ -> markIntroSeen() }
             .setNeutralButton("查看设置") { _, _ ->
                 markIntroSeen()
