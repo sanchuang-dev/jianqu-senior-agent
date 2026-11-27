@@ -117,9 +117,9 @@ class FamilyCallActivity : Activity() {
 
     private fun button(label: String, primary: Boolean = false, negative: Boolean = false,
                        onClick: () -> Unit): TextView =
-        text(label, 16f, if (negative) ui.onDanger else if (primary) ui.onAccent else accent, true).apply {
+        text(label, JianquTypography.bodySp, if (negative) ui.onDanger else if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
-            setPadding(dp(12), dp(10), dp(12), dp(10))
+            setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space10Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space10Dp))
             minHeight = dp(JianquDimensions.minActionHeightDp)
             background = ripple(
                 when {
@@ -143,7 +143,7 @@ class FamilyCallActivity : Activity() {
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pad = dp(if (wide()) 22 else 19)
-            setPadding(pad, dp(18), pad, dp(20))
+            setPadding(pad, dp(JianquSpacing.space18Dp), pad, dp(JianquSpacing.space20Dp))
             background = shape(surface, outline = true)
         }
 
@@ -186,29 +186,29 @@ class FamilyCallActivity : Activity() {
         }, FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER))
         addView(icon, LinearLayout.LayoutParams(dp(66), dp(66)))
 
-        line(this, "家人通话 · 交互原型", 14f, accent, true, 16)
+        line(this, "家人通话 · 交互原型", JianquTypography.supportingSp, accent, true, 16)
         line(this, titleFor(), if (wide()) JianquTypography.headingCompactSp else JianquTypography.headingLargeSp, ink, true, 10)
-        line(this, explainFor(), 16f, muted, space = 13)
+        line(this, explainFor(), JianquTypography.bodySp, muted, space = 13)
 
         if (screen != Screen.UNBOUND && contact != null) {
             val who = contact!!
-            line(this, "${who.title}  ·  ${who.relation}", 17f, ink, true, 19)
+            line(this, "${who.title}  ·  ${who.relation}", JianquTypography.bodyEmphasisSp, ink, true, 19)
         } else if (screen == Screen.CONTACTS) {
-            line(this, "本轮演示：2 位虚构家人", 16f, accent, true, 20)
+            line(this, "本轮演示：2 位虚构家人", JianquTypography.bodySp, accent, true, 20)
         }
         if (screen == Screen.CONNECTED) {
-            line(this, "视频：未采集  ·  声音：未采集", 15f, accent, true, 18)
+            line(this, "视频：未采集  ·  声音：未采集", JianquTypography.bodyCompactSp, accent, true, 18)
         }
     }
 
     private fun contactsPanel(panel: LinearLayout) {
-        line(panel, "仅用于演示的家人列表", 21f, ink, true, 0)
-        line(panel, "这里不会读取微信好友、电话号码或真实家庭资料。", 15f, muted, space = 9)
+        line(panel, "仅用于演示的家人列表", JianquTypography.headingCompactSp, ink, true, 0)
+        line(panel, "这里不会读取微信好友、电话号码或真实家庭资料。", JianquTypography.bodyCompactSp, muted, space = 9)
         contacts.forEach { person ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(7), dp(10), dp(7))
+                setPadding(dp(JianquSpacing.space12Dp), dp(7), dp(JianquSpacing.space10Dp), dp(7))
                 background = ripple(bg, true)
                 isFocusable = true
                 isClickable = true
@@ -223,19 +223,19 @@ class FamilyCallActivity : Activity() {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(13), 0, 0, 0)
             }
-            labels.addView(text(person.title, 18f, ink, true))
-            labels.addView(text(person.relation, 14f, muted),
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+            labels.addView(text(person.title, JianquTypography.bodyLargeSp, ink, true))
+            labels.addView(text(person.relation, JianquTypography.supportingSp, muted),
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space4Dp) })
             row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
             row.addView(text("›", 27f, accent), LinearLayout.LayoutParams(dp(24), -2))
-            panel.addView(row, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(12) })
+            panel.addView(row, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(JianquSpacing.space12Dp) })
         }
         addButton(panel, "退出演示并清除联系人", space = 20) { navigate(Screen.UNBOUND, null) }
     }
 
     private fun scenarios(panel: LinearLayout) {
-        line(panel, "请选择模拟结果", 21f, ink, true, 0)
-        line(panel, "演示状态由你手动选择，不会接通真实家人。", 15f, muted, space = 8)
+        line(panel, "请选择模拟结果", JianquTypography.headingCompactSp, ink, true, 0)
+        line(panel, "演示状态由你手动选择，不会接通真实家人。", JianquTypography.bodyCompactSp, muted, space = 8)
         val options = listOf(
             "模拟接通" to null,
             "模拟拒接" to EndReason.REFUSED,
@@ -251,7 +251,7 @@ class FamilyCallActivity : Activity() {
                     if (option.second == null) navigate(Screen.CONNECTED)
                     else navigate(Screen.FINISHED, ended = option.second)
                 }), LinearLayout.LayoutParams(0, dp(52), 1f).apply {
-                    if (i > 0) leftMargin = dp(8)
+                    if (i > 0) leftMargin = dp(JianquSpacing.space8Dp)
                 })
             }
             panel.addView(row, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(9) })
@@ -264,20 +264,20 @@ class FamilyCallActivity : Activity() {
     private fun actions(): LinearLayout = makePanel().apply {
         when (screen) {
             Screen.UNBOUND -> {
-                line(this, "如何与家人联系？", 21f, ink, true, 0)
+                line(this, "如何与家人联系？", JianquTypography.headingCompactSp, ink, true, 0)
                 line(this, "1. 家属通过正式服务授权并绑定设备。", space = 17)
                 line(this, "2. 设备确认可以联系哪些家人。", space = 13)
                 line(this, "3. 双方具备摄像头、麦克风和通信能力，才可实际发起视频。", space = 13)
                 addButton(this, "进入演示模式（虚构家人）", primary = true, space = 25) {
                     navigate(Screen.CONTACTS, null)
                 }
-                line(this, "当前没有绑定功能，也不能直接呼叫微信好友。", 14f, muted, space = 13)
+                line(this, "当前没有绑定功能，也不能直接呼叫微信好友。", JianquTypography.supportingSp, muted, space = 13)
             }
             Screen.CONTACTS -> contactsPanel(this)
             Screen.CONFIRM -> {
-                line(this, "确认发起视频呼叫？", 21f, ink, true, 0)
-                line(this, "${contact?.title ?: "虚构家人"} · 本地演示", 17f, ink, true, 16)
-                line(this, "这一步不会发送呼叫、启动摄像头或请求麦克风权限。", 16f, muted, space = 15)
+                line(this, "确认发起视频呼叫？", JianquTypography.headingCompactSp, ink, true, 0)
+                line(this, "${contact?.title ?: "虚构家人"} · 本地演示", JianquTypography.bodyEmphasisSp, ink, true, 16)
+                line(this, "这一步不会发送呼叫、启动摄像头或请求麦克风权限。", JianquTypography.bodySp, muted, space = 15)
                 addButton(this, "开始模拟呼叫", primary = true, space = 23) {
                     navigate(Screen.RINGING)
                 }
@@ -285,21 +285,21 @@ class FamilyCallActivity : Activity() {
             }
             Screen.RINGING -> scenarios(this)
             Screen.CONNECTED -> {
-                line(this, "视频画面未接入", 22f, ink, true, 0)
-                val blank = text("没有真实视频画面\n没有采集麦克风声音", 17f, muted).apply {
+                line(this, "视频画面未接入", JianquTypography.sectionSp, ink, true, 0)
+                val blank = text("没有真实视频画面\n没有采集麦克风声音", JianquTypography.bodyEmphasisSp, muted).apply {
                     gravity = Gravity.CENTER
-                    setPadding(dp(12), dp(16), dp(12), dp(16))
+                    setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space16Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space16Dp))
                     background = shape(bg, outline = true)
                 }
                 addView(blank, LinearLayout.LayoutParams(-1, dp(if (wide()) 120 else 160)).apply {
-                    topMargin = dp(16)
+                    topMargin = dp(JianquSpacing.space16Dp)
                 })
                 addButton(this, "挂断模拟通话", negative = true, space = 18) {
                     navigate(Screen.FINISHED, ended = EndReason.HUNG_UP)
                 }
             }
             Screen.FINISHED -> {
-                line(this, "演示结果", 21f, ink, true, 0)
+                line(this, "演示结果", JianquTypography.headingCompactSp, ink, true, 0)
                 val detail = when (reason) {
                     EndReason.REFUSED -> "演示：家人拒绝接听。没有真实家人收到请求。"
                     EndReason.NO_ANSWER -> "演示：等待超时。没有真实等待或计费。"
@@ -310,7 +310,7 @@ class FamilyCallActivity : Activity() {
                     EndReason.HUNG_UP -> "演示：已挂断。没有实际音视频通话。"
                     null -> "本轮仅是演示，没有实际音视频通话。"
                 }
-                line(this, detail, 17f, muted, space = 16)
+                line(this, detail, JianquTypography.bodyEmphasisSp, muted, space = 16)
                 addButton(this, "重新选择模拟结果", primary = true, space = 22) {
                     navigate(Screen.RINGING)
                 }
@@ -326,28 +326,9 @@ class FamilyCallActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(18), dp(8), dp(18), dp(8))
-        }
-        val back = text("‹", 35f, accent).apply {
-            gravity = Gravity.CENTER
-            minHeight = dp(JianquDimensions.minActionHeightDp)
-            contentDescription = "返回桌面"
-            background = ripple(surface, outlined = true)
-            isFocusable = true
-            isClickable = true
-            setOnClickListener { leave() }
-        }
-        header.addView(back, LinearLayout.LayoutParams(dp(56), dp(56)))
-        header.addView(text("家人通话", 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(14) })
-        if (isWide) {
-            header.addView(text("原型演示 · 未接通微信", 14f, accent, true),
-                LinearLayout.LayoutParams(-2, dp(56)))
-        }
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(JianquPageHeader.create(this, "家人通话",
+            status = if (isWide) "原型演示 · 未接通微信" else null,
+            statusColor = accent, onBack = ::leave), LinearLayout.LayoutParams(-1, -2))
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -361,20 +342,20 @@ class FamilyCallActivity : Activity() {
         val panel = actions()
         if (isWide) {
             columns.addView(intro, LinearLayout.LayoutParams(0, -2, 0.92f).apply {
-                rightMargin = dp(14)
+                rightMargin = dp(JianquSpacing.space14Dp)
             })
             columns.addView(panel, LinearLayout.LayoutParams(0, -2, 1.08f))
         } else {
             columns.addView(intro, LinearLayout.LayoutParams(-1, -2))
             columns.addView(panel, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(14)
+                topMargin = dp(JianquSpacing.space14Dp)
             })
         }
         scroll.addView(columns)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        val disclosure = text("本地模拟流程 · 无真实联系人、呼叫、摄像头或麦克风采集", 13f, muted).apply {
+        val disclosure = text("本地模拟流程 · 无真实联系人、呼叫、摄像头或麦克风采集", JianquTypography.captionLargeSp, muted).apply {
             gravity = Gravity.CENTER
-            setPadding(dp(12), 0, dp(12), 0)
+            setPadding(dp(JianquSpacing.space12Dp), 0, dp(JianquSpacing.space12Dp), 0)
         }
         root.addView(disclosure, LinearLayout.LayoutParams(-1, dp(38)))
         setContentView(root)

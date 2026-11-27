@@ -36,7 +36,7 @@ class WeatherActivity : Activity() {
     private fun touch(color: Int, radius: Int) = JianquDrawables.touch(this, color, radius)
     private fun label(value: String, size: Float, color: Int = ink, bold: Boolean = false) =
         JianquTypography.text(this, value, size, color, bold)
-    private fun action(value: String, click: () -> Unit) = label(value, 16f, accent, true).apply {
+    private fun action(value: String, click: () -> Unit) = label(value, JianquTypography.bodySp, accent, true).apply {
         gravity = Gravity.CENTER
         isClickable = true
         isFocusable = true
@@ -92,29 +92,27 @@ class WeatherActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(backgroundColor)
-            setPadding(dp(20), dp(12), dp(20), dp(12))
+            setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space12Dp))
         }
-        setContentView(root)
-        root.addView(label("‹  返回桌面", 18f, accent, true).apply {
-            isClickable = true
-            isFocusable = true
-            contentDescription = "返回桌面"
-            setOnClickListener { finish() }
-        }, LinearLayout.LayoutParams(-1, dp(45)))
-        root.addView(label("七日天气预报", 30f, ink, true),
-            LinearLayout.LayoutParams(-1, dp(61)))
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+            addView(JianquPageHeader.create(this@WeatherActivity, "七日天气预报", onBack = ::finish))
+            addView(root, LinearLayout.LayoutParams(-1, 0, 1f))
+        }
+        setContentView(screen)
 
         val scroll = ScrollView(this).apply { overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(5), 0, dp(24))
+            setPadding(0, dp(5), 0, dp(JianquSpacing.space24Dp))
         }
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         val cityRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(14), dp(11), dp(12), dp(11))
+            setPadding(dp(JianquSpacing.space14Dp), dp(11), dp(JianquSpacing.space12Dp), dp(11))
             background = rounded(ui.surface, 14, border)
         }
         cityRow.addView(label(
@@ -126,8 +124,8 @@ class WeatherActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(102), dp(49)))
         content.addView(cityRow)
 
-        status = label("读取预报中…", 14f, muted).apply {
-            setPadding(dp(10), dp(10), dp(8), dp(9))
+        status = label("读取预报中…", JianquTypography.supportingSp, muted).apply {
+            setPadding(dp(JianquSpacing.space10Dp), dp(JianquSpacing.space10Dp), dp(JianquSpacing.space8Dp), dp(9))
             minHeight = dp(56)
         }
         content.addView(status, LinearLayout.LayoutParams(-1, -2))
@@ -136,9 +134,9 @@ class WeatherActivity : Activity() {
 
         val credit = label(
             "数据：MET Norway · CC BY 4.0\n每日高低温由预报采样推算，并非实测气温。",
-            13f, muted
+            JianquTypography.captionLargeSp, muted
         ).apply {
-            setPadding(dp(10), dp(15), dp(10), dp(15))
+            setPadding(dp(JianquSpacing.space10Dp), dp(15), dp(JianquSpacing.space10Dp), dp(15))
             isClickable = true
             isFocusable = true
             contentDescription = "查看 MET Norway 气象数据许可"
@@ -190,7 +188,7 @@ class WeatherActivity : Activity() {
 
     private fun showMessage(message: String) {
         results.removeAllViews()
-        results.addView(label(message, 17f, muted).apply {
+        results.addView(label(message, JianquTypography.bodyEmphasisSp, muted).apply {
             setPadding(dp(17), dp(19), dp(17), dp(19))
             background = rounded(ui.surface, 13, border)
         })
@@ -200,37 +198,37 @@ class WeatherActivity : Activity() {
         latest = forecast
         results.removeAllViews()
         val state = if (forecast.stale) "过期预报 · 请谨慎参考" else "未来七日 · 预报数据"
-        results.addView(label(state, 20f, ink, true),
+        results.addView(label(state, JianquTypography.headingSmallSp, ink, true),
             LinearLayout.LayoutParams(-1, dp(50)))
         val localTime = runCatching {
             Instant.parse(forecast.updatedAt)
                 .atZone(ZoneId.of("Asia/Shanghai"))
                 .format(DateTimeFormatter.ofPattern("M月d日 HH:mm", Locale.CHINA))
         }.getOrDefault("未知")
-        results.addView(label("MET 更新：$localTime（北京时间） · 近期预报约 ${forecast.nearTemperature}°", 14f, muted),
+        results.addView(label("MET 更新：$localTime（北京时间） · 近期预报约 ${forecast.nearTemperature}°", JianquTypography.supportingSp, muted),
             LinearLayout.LayoutParams(-1, dp(37)))
         if (error != null) {
-            results.addView(label("提示：$error", 14f, accent),
+            results.addView(label("提示：$error", JianquTypography.supportingSp, accent),
                 LinearLayout.LayoutParams(-1, dp(43)))
         }
         forecast.days.forEachIndexed { index, day ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(13), dp(7), dp(12), dp(7))
+                setPadding(dp(13), dp(7), dp(JianquSpacing.space12Dp), dp(7))
                 background = rounded(ui.surface, 13, border)
             }
             val date = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-            date.addView(label(day.title, 17f, ink, true))
-            date.addView(label(if (index == 0) "今日剩余时段" else "预报采样", 12f, muted),
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+            date.addView(label(day.title, JianquTypography.bodyEmphasisSp, ink, true))
+            date.addView(label(if (index == 0) "今日剩余时段" else "预报采样", JianquTypography.captionSp, muted),
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space6Dp) })
             row.addView(date, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(label(day.symbol, 15f, ink),
+            row.addView(label(day.symbol, JianquTypography.bodyCompactSp, ink),
                 LinearLayout.LayoutParams(dp(90), -2))
-            row.addView(label("${day.high}° / ${day.low}°", 17f, ink, true),
+            row.addView(label("${day.high}° / ${day.low}°", JianquTypography.bodyEmphasisSp, ink, true),
                 LinearLayout.LayoutParams(dp(105), -2))
             results.addView(row, LinearLayout.LayoutParams(-1, dp(76)).apply {
-                bottomMargin = dp(8)
+                bottomMargin = dp(JianquSpacing.space8Dp)
             })
         }
     }

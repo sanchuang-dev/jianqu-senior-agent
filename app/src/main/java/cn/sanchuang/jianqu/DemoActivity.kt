@@ -2,12 +2,8 @@ package cn.sanchuang.jianqu
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.widget.FrameLayout
 import android.view.View
 import android.content.pm.LauncherApps
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.content.res.Configuration
@@ -22,6 +18,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import cn.sanchuang.jianqu.demo.rental.DemoRentalPolicy
+import cn.sanchuang.jianqu.demo.rental.DemoRentalPrefs
 
 /**
  * JQ-003 local mock: never communicates with payment, AI, account or device-ID services.
@@ -45,9 +43,6 @@ class DemoActivity : Activity() {
     private data class Line(val prompt: String, val reply: String)
     private data class Style(val title: String, val label: String, val tone: String, val welcome: String, val lines: List<Line>)
 
-    private val rentalTermDays = 30L // Prototype-only period, not a commercial offer.
-    private val rentalTermMs = rentalTermDays * 24 * 60 * 60 * 1000
-    private val rentalDevice = "JQ-DEMO-01" // Single local demo machine; no external device enrollment.
     private val serviceOptions by lazy { listOf(
         ServiceOption("companion", "知己", "人格陪伴", "小暖人格互动", "语音与个性记忆", ui.companionStart, R.drawable.ic_home_hand_heart),
         ServiceOption("wellness", "元气", "健康关怀", "康复训练、健康打卡", "健康计划与课程", ui.healthIcon, R.drawable.ic_home_stethoscope),
@@ -81,7 +76,7 @@ class DemoActivity : Activity() {
         ))
     )
 
-    private val prefs by lazy { getSharedPreferences("jianqu_local_demo", MODE_PRIVATE) }
+    private val rentalPrefs by lazy { DemoRentalPrefs.open(this) }
     private var page = Page.HOME
     private var styleIndex = 0
     private val conversation = mutableListOf<Line>()
@@ -97,7 +92,7 @@ class DemoActivity : Activity() {
         super.onCreate(savedInstanceState)
         chatRequested = intent?.getBooleanExtra(EXTRA_OPEN_CHAT, false) == true
         pendingServiceIds.clear()
-        pendingServiceIds.addAll(storedServiceIds())
+        pendingServiceIds.addAll(rentalState().serviceIds)
         // JQ-007: the free local script demo is not gated by fictional device subscriptions.
         page = if (chatRequested) Page.CHAT else Page.HOME
         draw()
@@ -145,63 +140,29 @@ class DemoActivity : Activity() {
         JianquDrawables.touch(this, color, stroke = if (outlined) ui.border else null)
 
     /** 56dp icon-only back target with the same touch treatment as HOME. */
-    private fun backControl(description: String, click: () -> Unit): FrameLayout =
-        FrameLayout(this).apply {
-            background = pressable(ui.surface, outlined = true)
-            isClickable = true
-            isFocusable = true
-            contentDescription = description
-            setOnClickListener { click() }
-            addView(object : View(this@DemoActivity) {
-                private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = accent
-                    style = Paint.Style.STROKE
-                    strokeCap = Paint.Cap.ROUND
-                    strokeJoin = Paint.Join.ROUND
-                    strokeWidth = dp(2).toFloat()
-                }
-
-                override fun onDraw(canvas: Canvas) {
-                    super.onDraw(canvas)
-                    val cx = width / 2f
-                    val cy = height / 2f
-                    canvas.drawLine(cx + dp(11), cy, cx - dp(10), cy, stroke)
-                    canvas.drawLine(cx - dp(10), cy, cx - dp(2), cy - dp(8), stroke)
-                    canvas.drawLine(cx - dp(10), cy, cx - dp(2), cy + dp(8), stroke)
-                }
-            }, FrameLayout.LayoutParams(-1, -1))
-        }
-
     private fun line(
-        parent: LinearLayout, text: String, size: Float = 18f,
+        parent: LinearLayout, text: String, size: Float = JianquTypography.bodyLargeSp,
         color: Int = ink, bold: Boolean = false, top: Int = 12
     ) {
-        val v = TextView(this).apply {
-            this.text = text
-            textSize = size
-            setTextColor(color)
-            if (bold) setTypeface(null, Typeface.BOLD)
+        val v = JianquTypography.text(this, text, size, color, bold).apply {
+            includeFontPadding = true
             setLineSpacing(dp(3).toFloat(), 1f)
-            gravity = Gravity.CENTER_VERTICAL
         }
         parent.addView(v, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
     }
 
     private fun button(parent: LinearLayout, title: String, primary: Boolean = false, run: () -> Unit) {
-        val view = TextView(this).apply {
-            text = title
-            textSize = 18f
-            setTextColor(if (primary) ui.onAccent else ink)
-            setTypeface(null, Typeface.BOLD)
+        val view = JianquTypography.text(this, title, JianquTypography.bodyLargeSp, if (primary) ui.onAccent else ink, true).apply {
+            includeFontPadding = true
             gravity = Gravity.CENTER
             minHeight = dp(JianquDimensions.largeActionHeightDp)
-            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space12Dp))
             background = pressable(if (primary) accent else ui.surface, !primary)
             isClickable = true
             isFocusable = true
             setOnClickListener { run() }
         }
-        parent.addView(view, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        parent.addView(view, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space12Dp) })
     }
 
     private fun navigate(to: Page) {
@@ -223,10 +184,10 @@ class DemoActivity : Activity() {
         JianquDrawables.shape(this, color, stroke = if (outlined) ui.border else null)
 
     private fun actionText(value: String, primary: Boolean = false, click: () -> Unit) =
-        label(value, 16f, if (primary) ui.onAccent else accent, true).apply {
+        label(value, JianquTypography.bodySp, if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
             minHeight = dp(JianquDimensions.compactActionHeightDp)
-            setPadding(dp(10), dp(8), dp(10), dp(8))
+            setPadding(dp(JianquSpacing.space10Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space10Dp), dp(JianquSpacing.space8Dp))
             background = pressable(if (primary) accent else ui.surface, !primary)
             isClickable = true
             isFocusable = true
@@ -242,25 +203,15 @@ class DemoActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(20), dp(8), dp(20), dp(8))
-        }
-        bar.addView(backControl(if (page == Page.PAY) "返回设备租赁" else "返回桌面") {
-            onBackPressed()
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        bar.addView(
-            label(if (page == Page.HOME) "设备租赁" else "扫码付款", 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(12) }
-        )
-        bar.addView(label("原型演示", 14f, muted), LinearLayout.LayoutParams(-2, dp(52)))
-        root.addView(bar)
+        root.addView(JianquPageHeader.create(this,
+            if (page == Page.HOME) "设备租赁" else "扫码付款",
+            backDescription = if (page == Page.PAY) "返回设备租赁" else "返回桌面",
+            status = "原型演示") { onBackPressed() })
 
         val scroll = ScrollView(this).apply { isFillViewport = true }
         val body = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(10), dp(22), dp(28))
+            setPadding(dp(22), dp(JianquSpacing.space10Dp), dp(22), dp(JianquSpacing.space28Dp))
         }
         scroll.addView(body)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -268,15 +219,12 @@ class DemoActivity : Activity() {
         if (page == Page.HOME) showRental(body) else showPayment(body)
     }
 
-    private fun rentalExpiry(): Long = prefs.getLong("rental_expiry_ms", 0L)
+    private fun allowedServiceIds(): List<String> = serviceOptions.map { it.id }
+
+    private fun rentalState() = rentalPrefs.load(allowedServiceIds())
 
     private fun rentalDate(millis: Long): String =
         SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(millis))
-
-    private fun storedServiceIds(): Set<String> {
-        val saved = prefs.getStringSet("rental_service_ids", emptySet())?.toSet().orEmpty()
-        return serviceOptions.map { it.id }.filterTo(linkedSetOf()) { it in saved }
-    }
 
     private fun serviceNames(ids: Set<String>): String =
         serviceOptions.filter { it.id in ids }.joinToString("、") { it.shortName }
@@ -290,7 +238,7 @@ class DemoActivity : Activity() {
                 val tile = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     minimumHeight = dp(116)
-                    setPadding(dp(13), dp(12), dp(13), dp(12))
+                    setPadding(dp(13), dp(JianquSpacing.space12Dp), dp(13), dp(JianquSpacing.space12Dp))
                     background = JianquDrawables.touch(
                         this@DemoActivity,
                         service.backgroundColor,
@@ -310,9 +258,9 @@ class DemoActivity : Activity() {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
                 }
-                titleRow.addView(label(service.name, 20f, ink, true),
+                titleRow.addView(label(service.name, JianquTypography.headingSmallSp, ink, true),
                     LinearLayout.LayoutParams(0, -2, 1f))
-                titleRow.addView(label(if (selected) "✓ 已选" else "＋ 添加", 13f,
+                titleRow.addView(label(if (selected) "✓ 已选" else "＋ 添加", JianquTypography.captionLargeSp,
                     if (selected) accent else muted, selected))
                 tile.addView(titleRow)
                 val pictogram = ImageView(this).apply {
@@ -321,11 +269,11 @@ class DemoActivity : Activity() {
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }
                 tile.addView(pictogram, LinearLayout.LayoutParams(dp(33), dp(33)).apply {
-                    topMargin = dp(10)
+                    topMargin = dp(JianquSpacing.space10Dp)
                 })
-                line(tile, service.shortName, 15f, ink, true, top = 8)
-                line(tile, service.description, 14f, ink, top = 7)
-                line(tile, service.note, 12f, muted, top = 5)
+                line(tile, service.shortName, JianquTypography.bodyCompactSp, ink, true, top = 8)
+                line(tile, service.description, JianquTypography.supportingSp, ink, top = 7)
+                line(tile, service.note, JianquTypography.captionSp, muted, top = 5)
                 row.addView(tile, LinearLayout.LayoutParams(0, -2, if (options.size == 1) 2f else 1f).apply {
                     if (index > 0) leftMargin = dp(9)
                 })
@@ -343,66 +291,67 @@ class DemoActivity : Activity() {
 
     private fun showRental(body: LinearLayout) {
         val landscape = wide()
-        val expiry = rentalExpiry()
-        val active = expiry > System.currentTimeMillis()
-        val committedServices = if (active) storedServiceIds() else emptySet()
+        val currentRental = rentalState()
+        val expiry = currentRental.expiryMs
+        val active = currentRental.isActive(System.currentTimeMillis())
+        val committedServices = if (active) currentRental.serviceIds else emptySet()
         body.orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
 
         val overview = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(23), dp(24), dp(25))
+            setPadding(dp(JianquSpacing.space24Dp), dp(23), dp(JianquSpacing.space24Dp), dp(25))
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
                 intArrayOf(ui.companionStart, ui.companionEnd)
             ).apply { cornerRadius = dp(18).toFloat() }
         }
-        line(overview, "见趣 · 闺蜜机", 21f, ink, true, 0)
-        line(overview, "本机编号  $rentalDevice", 15f, muted, top = 10)
+        line(overview, "见趣 · 闺蜜机", JianquTypography.headingCompactSp, ink, true, 0)
+        line(overview, "本机编号  ${DemoRentalPolicy.DEVICE_ID}", JianquTypography.bodyCompactSp, muted, top = 10)
         val state = when {
             active -> "租赁有效"
             expiry > 0L -> "租赁已到期"
             else -> "尚未租赁"
         }
-        line(overview, state, 32f, if (active) accent else ink, true, 25)
+        line(overview, state, JianquTypography.pageTitleSp, if (active) accent else ink, true, 25)
         line(overview,
             if (expiry > 0L) "租期至 ${rentalDate(expiry)}" else "租用这台设备，按期续租",
-            17f, muted, top = 9
+            JianquTypography.bodyEmphasisSp, muted, top = 9
         )
         if (active) {
-            line(overview, "本期服务组合", 16f, ink, true, top = 22)
+            line(overview, "本期服务组合", JianquTypography.bodySp, ink, true, top = 22)
             line(overview,
                 if (committedServices.isEmpty()) "仅设备租赁" else serviceNames(committedServices),
-                16f, accent, top = 7
+                JianquTypography.bodySp, accent, top = 7
             )
-            line(overview, "服务权益仅作原型演示", 13f, muted, top = 6)
+            line(overview, "服务权益仅作原型演示", JianquTypography.captionLargeSp, muted, top = 6)
         }
 
         val action = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(17), dp(18), dp(18))
+            setPadding(dp(JianquSpacing.space18Dp), dp(17), dp(JianquSpacing.space18Dp), dp(JianquSpacing.space18Dp))
             background = paper(outlined = true)
         }
-        line(action, "选择你的服务", 23f, ink, true, 0)
-        line(action, "机器租赁为基础，服务可自由组合", 15f, muted, top = 7)
+        line(action, "选择你的服务", JianquTypography.toolbarTitleSp, ink, true, 0)
+        line(action, "机器租赁为基础，服务可自由组合", JianquTypography.bodyCompactSp, muted, top = 7)
 
         val grid = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
         action.addView(grid, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(14)
+            topMargin = dp(JianquSpacing.space14Dp)
         })
-        val summary = label("", 15f, ink, true)
+        val summary = label("", JianquTypography.bodyCompactSp, ink, true)
         action.addView(summary, LinearLayout.LayoutParams(-1, -2).apply {
             topMargin = dp(13)
         })
         renderServiceChoices(grid, summary)
-        line(action, "服务价格待定 · 当前仅演示组合选择", 13f, muted, top = 6)
+        line(action, "服务价格待定 · 当前仅演示组合选择", JianquTypography.captionLargeSp, muted, top = 6)
         button(action, if (active) "扫码续租" else "扫码开通", true) {
             navigate(Page.PAY)
         }
-        line(action, "付款演示不会实际扣费", 13f, muted, top = 8)
+        line(action, "付款演示不会实际扣费", JianquTypography.captionLargeSp, muted, top = 8)
 
-        val resetLink = label("重置演示", 14f, muted).apply {
+        val resetLink = label("重置演示", JianquTypography.supportingSp, muted).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             isClickable = true
             isFocusable = true
@@ -412,10 +361,7 @@ class DemoActivity : Activity() {
                     .setMessage("将清除本机的演示租期及已选服务。")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("重置") { _, _ ->
-                        prefs.edit()
-                            .remove("rental_expiry_ms")
-                            .remove("rental_service_ids")
-                            .apply()
+                        rentalPrefs.clear()
                         pendingServiceIds.clear()
                         draw()
                     }.show()
@@ -443,30 +389,31 @@ class DemoActivity : Activity() {
 
         val order = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(21), dp(24), dp(22))
+            setPadding(dp(JianquSpacing.space24Dp), dp(21), dp(JianquSpacing.space24Dp), dp(22))
         }
-        line(order, "本机租赁 · 订单演示", 23f, ink, true, 0)
+        line(order, "本机租赁 · 订单演示", JianquTypography.toolbarTitleSp, ink, true, 0)
         line(order, "¥99", 44f, accent, true, 18)
-        line(order, "设备租金演示价 · 30 天", 15f, muted, top = 3)
-        line(order, "租赁设备  $rentalDevice", 16f, ink, top = 23)
-        if (rentalExpiry() > System.currentTimeMillis()) {
-            line(order, "现有租期至 ${rentalDate(rentalExpiry())}", 15f, muted, top = 10)
+        line(order, "设备租金演示价 · 30 天", JianquTypography.bodyCompactSp, muted, top = 3)
+        line(order, "租赁设备  ${DemoRentalPolicy.DEVICE_ID}", JianquTypography.bodySp, ink, top = 23)
+        val currentRental = rentalState()
+        if (currentRental.isActive(System.currentTimeMillis())) {
+            line(order, "现有租期至 ${rentalDate(currentRental.expiryMs)}", JianquTypography.bodyCompactSp, muted, top = 10)
         }
-        line(order, "本次服务组合", 17f, ink, true, top = 22)
+        line(order, "本次服务组合", JianquTypography.bodyEmphasisSp, ink, true, top = 22)
         line(order,
             if (pendingServiceIds.isEmpty()) "仅设备租赁"
             else serviceNames(pendingServiceIds),
             19f, accent, true, top = 7
         )
-        line(order, "服务套餐价格尚未制定，不计入示例金额", 14f, muted, top = 10)
+        line(order, "服务套餐价格尚未制定，不计入示例金额", JianquTypography.supportingSp, muted, top = 10)
 
         val payment = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(20), dp(16), dp(20), dp(20))
+            setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space16Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space20Dp))
             background = paper(outlined = true)
         }
-        line(payment, "手机扫码付款", 23f, ink, true, 0)
+        line(payment, "手机扫码付款", JianquTypography.toolbarTitleSp, ink, true, 0)
         val qr = ImageView(this).apply {
             setImageResource(R.drawable.qr_rental_demo)
             scaleType = ImageView.ScaleType.FIT_CENTER
@@ -475,13 +422,13 @@ class DemoActivity : Activity() {
         val qrSize = dp(if (landscape) 184 else 226)
         payment.addView(qr, LinearLayout.LayoutParams(qrSize, qrSize).apply {
             gravity = Gravity.CENTER_HORIZONTAL
-            topMargin = dp(10)
+            topMargin = dp(JianquSpacing.space10Dp)
         })
-        line(payment, "演示二维码 · 无法真实付款", 14f, muted, top = 7)
+        line(payment, "演示二维码 · 无法真实付款", JianquTypography.supportingSp, muted, top = 7)
         button(payment, "模拟付款完成", true) { completeDemoPayment() }
         if (landscape) {
             body.addView(order, LinearLayout.LayoutParams(0, -2, 1f).apply {
-                rightMargin = dp(18)
+                rightMargin = dp(JianquSpacing.space18Dp)
             })
             body.addView(payment, LinearLayout.LayoutParams(0, -2, 1.1f))
         } else {
@@ -493,12 +440,11 @@ class DemoActivity : Activity() {
     private fun completeDemoPayment() {
         // The only path that changes this machine's demo lease and demo service choices.
         // An unconfirmed draft is never persisted.
-        val now = System.currentTimeMillis()
-        val nextExpiry = maxOf(now, rentalExpiry()) + rentalTermMs
-        prefs.edit()
-            .putLong("rental_expiry_ms", nextExpiry)
-            .putStringSet("rental_service_ids", pendingServiceIds.toSet())
-            .apply()
+        val renewed = DemoRentalPolicy.renew(
+            current = rentalState(), nowMs = System.currentTimeMillis(),
+            selectedServiceIds = pendingServiceIds, allowedServiceIds = allowedServiceIds()
+        )
+        rentalPrefs.save(renewed)
         page = Page.HOME
         draw()
     }
@@ -509,22 +455,14 @@ class DemoActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(17), dp(6), dp(17), dp(6))
-        }
-        header.addView(backControl("返回桌面") {
+        root.addView(JianquPageHeader.create(this, "小暖") {
             conversation.clear()
             finish()
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        header.addView(label("小暖", 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(14) })
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(72)))
+        }, LinearLayout.LayoutParams(-1, -2))
 
         val area = LinearLayout(this).apply {
             orientation = if (landscape) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-            setPadding(dp(16), 0, dp(16), dp(12))
+            setPadding(dp(JianquSpacing.space16Dp), 0, dp(JianquSpacing.space16Dp), dp(JianquSpacing.space12Dp))
         }
         root.addView(area, LinearLayout.LayoutParams(-1, 0, 1f))
 
@@ -532,7 +470,7 @@ class DemoActivity : Activity() {
         val profile = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(14), dp(if (landscape) 25 else 14), dp(14), dp(14))
+            setPadding(dp(JianquSpacing.space14Dp), dp(if (landscape) 25 else 14), dp(14), dp(14))
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                 intArrayOf(ui.companionStart, ui.companionEnd)
             ).apply { cornerRadius = dp(JianquDimensions.companionRadiusDp).toFloat() }
@@ -540,18 +478,18 @@ class DemoActivity : Activity() {
         val orb = companionOrb(this)
         orb.contentDescription = "小暖陪伴标志"
         profile.addView(orb, LinearLayout.LayoutParams(dp(68), dp(68)))
-        profile.addView(label(styles[styleIndex].title, 25f, ink, true).apply { gravity = Gravity.CENTER },
+        profile.addView(label(styles[styleIndex].title, JianquTypography.headingLargeSp, ink, true).apply { gravity = Gravity.CENTER },
             LinearLayout.LayoutParams(-1, dp(42)))
-        profile.addView(label(styles[styleIndex].tone, 15f, muted).apply {
+        profile.addView(label(styles[styleIndex].tone, JianquTypography.bodyCompactSp, muted).apply {
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, dp(30)))
-        profile.addView(label("本地模拟对话 · 非真实 AI", 14f, accent, true).apply {
+        profile.addView(label("本地模拟对话 · 非真实 AI", JianquTypography.supportingSp, accent, true).apply {
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, dp(32)))
         val stylesRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         styles.forEachIndexed { index, style ->
             val selected = styleIndex == index
-            stylesRow.addView(label(style.label, 16f, if (selected) ui.onAccent else ink, true).apply {
+            stylesRow.addView(label(style.label, JianquTypography.bodySp, if (selected) ui.onAccent else ink, true).apply {
                 gravity = Gravity.CENTER
                 background = pressable(if (selected) accent else ui.surface, !selected)
                 isClickable = true
@@ -570,11 +508,11 @@ class DemoActivity : Activity() {
             topMargin = dp(9)
         })
         if (landscape) {
-            profile.addView(label("当前风格 · ${styles[styleIndex].title}", 15f, muted).apply {
+            profile.addView(label("当前风格 · ${styles[styleIndex].title}", JianquTypography.bodyCompactSp, muted).apply {
                 gravity = Gravity.CENTER
             }, LinearLayout.LayoutParams(-1, dp(46)))
             area.addView(profile, LinearLayout.LayoutParams(dp(294), -1).apply {
-                rightMargin = dp(14)
+                rightMargin = dp(JianquSpacing.space14Dp)
             })
         } else {
             area.addView(profile, LinearLayout.LayoutParams(-1, -2))
@@ -583,7 +521,7 @@ class DemoActivity : Activity() {
         val chat = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = paper(outlined = true)
-            setPadding(dp(12), dp(9), dp(12), dp(12))
+            setPadding(dp(JianquSpacing.space12Dp), dp(9), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space12Dp))
         }
         val history = ScrollView(this).apply {
             isFillViewport = true
@@ -591,14 +529,14 @@ class DemoActivity : Activity() {
         }
         val messages = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(5), dp(4), dp(5), dp(8))
+            setPadding(dp(5), dp(JianquSpacing.space4Dp), dp(5), dp(JianquSpacing.space8Dp))
         }
         history.addView(messages)
         chat.addView(history, LinearLayout.LayoutParams(-1, 0, 1f))
         renderMessages(messages, history)
 
         val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        controls.addView(label("点一句话，看看小暖如何回应", 14f, muted),
+        controls.addView(label("点一句话，看看小暖如何回应", JianquTypography.supportingSp, muted),
             LinearLayout.LayoutParams(-1, dp(29)))
         val options = styles[styleIndex].lines
         for (row in 0 until 2) {
@@ -630,26 +568,26 @@ class DemoActivity : Activity() {
     private fun renderMessages(container: LinearLayout, scroll: ScrollView) {
         container.removeAllViews()
         if (conversation.isEmpty()) {
-            container.addView(label(styles[styleIndex].welcome, 17f, muted).apply {
+            container.addView(label(styles[styleIndex].welcome, JianquTypography.bodyEmphasisSp, muted).apply {
                 gravity = Gravity.CENTER
             }, LinearLayout.LayoutParams(-1, dp(104)))
         } else {
             conversation.forEach { exchange ->
                 val userRow = LinearLayout(this).apply { gravity = Gravity.END }
-                userRow.addView(label("你：${exchange.prompt}", 17f).apply {
+                userRow.addView(label("你：${exchange.prompt}", JianquTypography.bodyEmphasisSp).apply {
                     background = paper(ui.messageUser)
-                    setPadding(dp(14), dp(11), dp(14), dp(11))
+                    setPadding(dp(JianquSpacing.space14Dp), dp(11), dp(JianquSpacing.space14Dp), dp(11))
                 }, LinearLayout.LayoutParams(-2, -2))
                 container.addView(userRow, LinearLayout.LayoutParams(-1, -2).apply {
-                    topMargin = dp(12)
+                    topMargin = dp(JianquSpacing.space12Dp)
                 })
                 val replyRow = LinearLayout(this).apply { gravity = Gravity.START }
-                replyRow.addView(label("小暖 · ${styles[styleIndex].label}：${exchange.reply}", 17f).apply {
+                replyRow.addView(label("小暖 · ${styles[styleIndex].label}：${exchange.reply}", JianquTypography.bodyEmphasisSp).apply {
                     background = paper(ui.messageAssistant, outlined = true)
-                    setPadding(dp(14), dp(11), dp(14), dp(11))
+                    setPadding(dp(JianquSpacing.space14Dp), dp(11), dp(JianquSpacing.space14Dp), dp(11))
                 }, LinearLayout.LayoutParams(-2, -2))
                 container.addView(replyRow, LinearLayout.LayoutParams(-1, -2).apply {
-                    topMargin = dp(8)
+                    topMargin = dp(JianquSpacing.space8Dp)
                 })
             }
         }

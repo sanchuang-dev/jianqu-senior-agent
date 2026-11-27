@@ -12,6 +12,7 @@
     <color name="jq_on_accent">@color/jq_surface</color>
     <color name="jq_accent_secondary">#1F9E8F</color>
     <color name="jq_success">#0F7A6B</color>
+    <color name="jq_status_stale">#E2B43F</color>
     <color name="jq_accent_soft">#FDE9E2</color>
     <color name="jq_accent_soft_border">#F6D3C5</color>
     <color name="jq_orb_core">#FFD9C9</color>
@@ -33,4 +34,20 @@
     <color name="jq_all_apps_icon">#E6E3F5</color>
     <color name="jq_success_track">#CDDECD</color>
     <color name="jq_companion_end">#FFF6EC</color>
+    <!-- WeChat brand recognition only; never an authorization indicator. -->
+    <color name="jq_wechat_brand">#07C160</color>
+    <!-- Translucent surfaces over the rental welcome wallpaper. -->
+    <color name="jq_lease_scrim">#66FFFFFF</color>
+    <color name="jq_lease_glass_choice">#A6FFFFFF</color>
+    <!-- HOME reference design; neutral fallback and translucent surfaces over the dedicated wallpaper. -->
+    <color name="jq_home_canvas">#F3E8DE</color>
+    <!-- Shared glass material tokens. Tint applies over blurred wallpaper, never over text. -->
+    <color name="jq_glass_tile_tint">#59FFFFFF</color>
+    <color name="jq_glass_tile_edge">#BFFFFFFF</color>
+    <color name="jq_glass_panel_tint">#73FFFFFF</color>
+    <color name="jq_glass_panel_edge">#E6FFFFFF</color>
+    <color name="jq_glass_overlay_tint">#66FFFFFF</color>
+    <color name="jq_glass_overlay_edge">#E6FFFFFF</color>
+    <color name="jq_glass_control_tint">#33FFFFFF</color>
+    <color name="jq_glass_separator">#66FFFFFF</color>
 </resources>

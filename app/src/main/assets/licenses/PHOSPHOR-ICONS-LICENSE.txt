@@ -16,6 +16,13 @@ hand-heart
 gear
 squares-four
 
+Additional assets from upstream core main (2026-11-26):
+wifi-high
+headset
+qr-code
+bug
+wechat-logo
+
 The upstream icon geometry is distributed under the MIT License below.
 
 MIT License

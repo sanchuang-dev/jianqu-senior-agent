@@ -184,10 +184,10 @@ class ContentGalleryActivity : Activity() {
     }
 
     private fun button(title: String, primary: Boolean = false, click: () -> Unit): TextView =
-        text(title, 16f, if (primary) ui.onAccent else accent, true).apply {
+        text(title, JianquTypography.bodySp, if (primary) ui.onAccent else accent, true).apply {
             gravity = Gravity.CENTER
             minHeight = dp(JianquDimensions.minActionHeightDp)
-            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space8Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space8Dp))
             background = JianquDrawables.touch(this@ContentGalleryActivity,
                 if (primary) accent else ui.surface, JianquDimensions.cardRadiusDp,
                 if (primary) null else ui.border)
@@ -203,19 +203,14 @@ class ContentGalleryActivity : Activity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
     }
 
-    private fun header(): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(5), dp(16), dp(5))
-        addView(button("‹", false) { back() }.apply {
-            textSize = 31f
-            contentDescription = if (screen == Screen.LIST || screen == Screen.ALBUM_GATE)
-                "返回桌面" else "返回上一级"
-        }, LinearLayout.LayoutParams(dp(56), dp(56)))
-        addView(text(title(), 23f, ink, true),
-            LinearLayout.LayoutParams(0, dp(56), 1f).apply { leftMargin = dp(14) })
-        if (wide()) addView(text("本地原型 · 无真实内容服务", 13f, accent, true))
-    }
+    private fun header(): LinearLayout = JianquPageHeader.create(
+        this, title(),
+        backDescription = if (screen == Screen.LIST || screen == Screen.ALBUM_GATE)
+            "返回桌面" else "返回上一级",
+        status = if (wide()) "本地原型 · 无真实内容服务" else null,
+        statusColor = accent,
+        onBack = ::back
+    )
 
     private fun intro(): LinearLayout = card().apply {
         val iconBg = FrameLayout(this@ContentGalleryActivity).apply {
@@ -229,12 +224,12 @@ class ContentGalleryActivity : Activity() {
         }, FrameLayout.LayoutParams(dp(40), dp(40), Gravity.CENTER))
         addView(iconBg, LinearLayout.LayoutParams(dp(66), dp(66)))
         line(this, title(), JianquTypography.headingLargeSp, ink, true, 14)
-        line(this, description(), 16f, muted, top = 12)
-        line(this, "界面数据全部虚构 · 不代表资源已接通", 14f, accent, true, 19)
+        line(this, description(), JianquTypography.bodySp, muted, top = 12)
+        line(this, "界面数据全部虚构 · 不代表资源已接通", JianquTypography.supportingSp, accent, true, 19)
         if (section == ALBUM) {
-            line(this, "未读取设备相册、微信或家庭云盘。", 15f, muted, top = 14)
+            line(this, "未读取设备相册、微信或家庭云盘。", JianquTypography.bodyCompactSp, muted, top = 14)
         } else {
-            line(this, "版权、来源、发布日期与持续播放记录均待接入。", 15f, muted, top = 14)
+            line(this, "版权、来源、发布日期与持续播放记录均待接入。", JianquTypography.bodyCompactSp, muted, top = 14)
         }
     }
 
@@ -250,16 +245,16 @@ class ContentGalleryActivity : Activity() {
 
     private fun listPanel(): LinearLayout = card().apply {
         line(this, "演示栏目", JianquTypography.headingCompactSp, ink, true, 0)
-        line(this, "请选择分类，点击条目查看共用详情页。", 15f, muted, top = 9)
+        line(this, "请选择分类，点击条目查看共用详情页。", JianquTypography.bodyCompactSp, muted, top = 9)
         val chips = LinearLayout(this@ContentGalleryActivity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
         categories().forEachIndexed { index, name ->
             val active = selectedCategory == name
-            val chip = text(name, 15f, if (active) ui.onAccent else accent, active).apply {
+            val chip = text(name, JianquTypography.bodyCompactSp, if (active) ui.onAccent else accent, active).apply {
                 gravity = Gravity.CENTER
-                setPadding(dp(13), dp(6), dp(13), dp(6))
+                setPadding(dp(13), dp(JianquSpacing.space6Dp), dp(13), dp(JianquSpacing.space6Dp))
                 minHeight = dp(42)
                 background = JianquDrawables.touch(this@ContentGalleryActivity,
                     if (active) accent else ui.surface, JianquDimensions.cardRadiusDp,
@@ -269,13 +264,13 @@ class ContentGalleryActivity : Activity() {
                 setOnClickListener { selectedCategory = name; draw() }
             }
             chips.addView(chip, LinearLayout.LayoutParams(-2, -2).apply {
-                if (index > 0) leftMargin = dp(8)
+                if (index > 0) leftMargin = dp(JianquSpacing.space8Dp)
             })
         }
         addView(HorizontalScrollView(this@ContentGalleryActivity).apply {
             isHorizontalScrollBarEnabled = false
             addView(chips)
-        }, LinearLayout.LayoutParams(-1, dp(49)).apply { topMargin = dp(12) })
+        }, LinearLayout.LayoutParams(-1, dp(49)).apply { topMargin = dp(JianquSpacing.space12Dp) })
 
         val visible = contentEntries().withIndex().filter {
             selectedCategory == "全部" || it.value.category == selectedCategory
@@ -284,7 +279,7 @@ class ContentGalleryActivity : Activity() {
             val item = pair.value
             val row = LinearLayout(this@ContentGalleryActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(11), dp(14), dp(11))
+                setPadding(dp(JianquSpacing.space14Dp), dp(11), dp(JianquSpacing.space14Dp), dp(11))
                 background = JianquDrawables.touch(this@ContentGalleryActivity, ui.background,
                     JianquDimensions.cardRadiusDp, ui.border)
                 isClickable = true
@@ -295,9 +290,9 @@ class ContentGalleryActivity : Activity() {
                     go(Screen.DETAIL)
                 }
             }
-            line(row, item.title + " ›", 17f, ink, true, 0)
-            line(row, "${item.category} · ${item.badge} · 虚构示例", 14f, accent, top = 7)
-            addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+            line(row, item.title + " ›", JianquTypography.bodyEmphasisSp, ink, true, 0)
+            line(row, "${item.category} · ${item.badge} · 虚构示例", JianquTypography.supportingSp, accent, top = 7)
+            addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space10Dp) })
         }
         addButton(this, "模拟无资源空状态", top = 17) { go(Screen.EMPTY) }
         addButton(this, "模拟断网状态", top = 9) { go(Screen.OFFLINE) }
@@ -305,18 +300,18 @@ class ContentGalleryActivity : Activity() {
 
     private fun detailPanel(): LinearLayout = card().apply {
         val item = contentEntries().getOrNull(selectedItem) ?: return@apply
-        line(this, "内容详情 · 共用模板", 14f, accent, true, 0)
+        line(this, "内容详情 · 共用模板", JianquTypography.supportingSp, accent, true, 0)
         line(this, item.title, JianquTypography.headingCompactSp, ink, true, 13)
-        line(this, "分类：${item.category}   属性：${item.badge}", 16f, ink, top = 13)
-        line(this, item.summary, 16f, muted, top = 13)
-        line(this, "来源：${item.rights}", 14f, muted, top = 14)
-        line(this, "发布日期：未提供 · 播放资源：未接入", 14f, muted, top = 8)
+        line(this, "分类：${item.category}   属性：${item.badge}", JianquTypography.bodySp, ink, top = 13)
+        line(this, item.summary, JianquTypography.bodySp, muted, top = 13)
+        line(this, "来源：${item.rights}", JianquTypography.supportingSp, muted, top = 14)
+        line(this, "发布日期：未提供 · 播放资源：未接入", JianquTypography.supportingSp, muted, top = 8)
         if (section == HEALTH)
-            line(this, "科普不是诊疗建议；广告类必须先审查资质与标注。", 15f, accent, top = 11)
+            line(this, "科普不是诊疗建议；广告类必须先审查资质与标注。", JianquTypography.bodyCompactSp, accent, top = 11)
         if (section == NEWS)
-            line(this, "事实条目需真实来源；评论内容需显式注明观点。", 15f, accent, top = 11)
+            line(this, "事实条目需真实来源；评论内容需显式注明观点。", JianquTypography.bodyCompactSp, accent, top = 11)
         if (section == VIDEO)
-            line(this, "直播源未接通；续播记录未接入本机或账户。", 15f, accent, top = 11)
+            line(this, "直播源未接通；续播记录未接入本机或账户。", JianquTypography.bodyCompactSp, accent, top = 11)
         addButton(this, if (section == NEWS) "打开阅读界面（示意）" else "进入播放界面（示意）",
             primary = true, top = 20) { go(Screen.PREVIEW) }
         addButton(this, "返回栏目列表") { go(Screen.LIST) }
@@ -326,15 +321,15 @@ class ContentGalleryActivity : Activity() {
         val item = contentEntries().getOrNull(selectedItem) ?: return@apply
         line(this, if (section == NEWS) "阅读界面（示意）" else "播放界面（示意）",
             JianquTypography.headingCompactSp, ink, true, 0)
-        line(this, item.title + " · ${item.category}", 16f, ink, top = 12)
+        line(this, item.title + " · ${item.category}", JianquTypography.bodySp, ink, top = 12)
         val previewBox = text(if (section == NEWS)
             "正文占位 · 不含真实新闻或评论文章\n\n来源与内容事实均未提供"
         else "无媒体画面 / 无音频数据\n不解码、不播放、不传输",
-            18f, muted, false).apply {
+            JianquTypography.bodyLargeSp, muted, false).apply {
             gravity = Gravity.CENTER
             background = JianquDrawables.shape(this@ContentGalleryActivity, ui.background,
                 JianquDimensions.cardRadiusDp, ui.border)
-            setPadding(dp(12), dp(14), dp(12), dp(14))
+            setPadding(dp(JianquSpacing.space12Dp), dp(JianquSpacing.space14Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space14Dp))
         }
         addView(previewBox, LinearLayout.LayoutParams(-1, dp(if (wide()) 140 else 220)).apply {
             topMargin = dp(15)
@@ -345,7 +340,7 @@ class ContentGalleryActivity : Activity() {
                 PreviewState.PLAYING -> "模拟播放态 · 实际没有播放媒体"
                 PreviewState.PAUSED -> "模拟暂停态 · 实际没有播放媒体"
             }
-            line(this, stateLabel, 15f, accent, true, 13)
+            line(this, stateLabel, JianquTypography.bodyCompactSp, accent, true, 13)
             addButton(this, when (preview) {
                 PreviewState.IDLE -> "模拟开始播放"
                 PreviewState.PLAYING -> "模拟暂停播放"
@@ -360,7 +355,7 @@ class ContentGalleryActivity : Activity() {
             }
             addButton(this, "停止模拟播放") { preview = PreviewState.IDLE; draw() }
         } else {
-            line(this, "本文无真实内容，事实与评论只是待接入字段。", 15f, accent, top = 15)
+            line(this, "本文无真实内容，事实与评论只是待接入字段。", JianquTypography.bodyCompactSp, accent, top = 15)
         }
         addButton(this, "返回内容详情") { go(Screen.DETAIL) }
     }
@@ -371,7 +366,7 @@ class ContentGalleryActivity : Activity() {
         line(this, if (offline)
             "这是手动切换的断网演示，不表示真实网络已断开。"
         else "没有已授权资源或内容源。不能以虚构片单充当真实播放服务。",
-            16f, muted, top = 16)
+            JianquTypography.bodySp, muted, top = 16)
         addButton(this, "返回演示栏目", primary = true, top = 22) { go(Screen.LIST) }
     }
 
@@ -379,8 +374,8 @@ class ContentGalleryActivity : Activity() {
         when (screen) {
             Screen.ALBUM_GATE -> {
                 line(this, "家庭照片尚未接入", JianquTypography.headingCompactSp, ink, true, 0)
-                line(this, "相册来源未确定，也没有任何照片访问授权。", 16f, muted, top = 15)
-                line(this, "真实照片只应在本人授权、身份明确后打开；公共设备不能展示上一位使用者的私人相册。", 15f, muted, top = 13)
+                line(this, "相册来源未确定，也没有任何照片访问授权。", JianquTypography.bodySp, muted, top = 15)
+                line(this, "真实照片只应在本人授权、身份明确后打开；公共设备不能展示上一位使用者的私人相册。", JianquTypography.bodyCompactSp, muted, top = 13)
                 addButton(this, "体验抽象示例图集（非真实照片）", primary = true, top = 22) {
                     go(Screen.ALBUM_GALLERY)
                 }
@@ -389,20 +384,20 @@ class ContentGalleryActivity : Activity() {
             }
             Screen.ALBUM_DENIED -> {
                 line(this, "尚未获得照片授权", JianquTypography.headingCompactSp, ink, true, 0)
-                line(this, "没有访问设备图库或任何家庭账户。本状态是演示，不代表已经弹出 Android 权限请求。", 16f, muted, top = 18)
+                line(this, "没有访问设备图库或任何家庭账户。本状态是演示，不代表已经弹出 Android 权限请求。", JianquTypography.bodySp, muted, top = 18)
                 addButton(this, "返回来源说明", primary = true, top = 22) { go(Screen.ALBUM_GATE) }
             }
             Screen.ALBUM_EMPTY -> {
                 line(this, "没有可展示的照片", JianquTypography.headingCompactSp, ink, true, 0)
-                line(this, "这里没有读取真实相册，空图集是手动选择的示意状态。", 16f, muted, top = 18)
+                line(this, "这里没有读取真实相册，空图集是手动选择的示意状态。", JianquTypography.bodySp, muted, top = 18)
                 addButton(this, "返回来源说明", primary = true, top = 22) { go(Screen.ALBUM_GATE) }
             }
             Screen.ALBUM_GALLERY -> {
                 line(this, "抽象示例图集", JianquTypography.headingCompactSp, ink, true, 0)
-                line(this, "仅是三张无人物、无照片的示意相框。", 15f, muted, top = 9)
+                line(this, "仅是三张无人物、无照片的示意相框。", JianquTypography.bodyCompactSp, muted, top = 9)
                 albumLabels.forEachIndexed { idx, label ->
-                    val row = text("$label   ›", 17f, ink, true).apply {
-                        setPadding(dp(18), dp(14), dp(18), dp(14))
+                    val row = text("$label   ›", JianquTypography.bodyEmphasisSp, ink, true).apply {
+                        setPadding(dp(JianquSpacing.space18Dp), dp(JianquSpacing.space14Dp), dp(JianquSpacing.space18Dp), dp(JianquSpacing.space14Dp))
                         minHeight = dp(68)
                         background = JianquDrawables.touch(this@ContentGalleryActivity,
                             ui.background, JianquDimensions.cardRadiusDp, ui.border)
@@ -410,7 +405,7 @@ class ContentGalleryActivity : Activity() {
                         isClickable = true
                         setOnClickListener { albumIndex = idx; go(Screen.ALBUM_VIEWER) }
                     }
-                    addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+                    addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(JianquSpacing.space10Dp) })
                 }
                 addButton(this, "结束示例，返回相册说明", top = 16) { go(Screen.ALBUM_GATE) }
             }
@@ -421,24 +416,24 @@ class ContentGalleryActivity : Activity() {
     private fun albumViewer(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setBackgroundColor(ui.background)
-        addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
+        addView(header(), LinearLayout.LayoutParams(-1, -2))
         val pane = FrameLayout(this@ContentGalleryActivity).apply {
             background = JianquDrawables.shape(this@ContentGalleryActivity, ui.surface, JianquDimensions.cardRadiusDp, ui.border)
             val label = text(
                 "◇\n${albumLabels[albumIndex]}\n\n抽象相框 · 非真实照片",
-                if (wide()) 28f else 24f, muted, true
+                if (wide()) JianquTypography.displayCompactSp else JianquTypography.titleCompactSp, muted, true
             ).apply {
                 gravity = Gravity.CENTER
-                setPadding(dp(20), dp(20), dp(20), dp(20))
+                setPadding(dp(JianquSpacing.space20Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space20Dp), dp(JianquSpacing.space20Dp))
             }
             addView(label, FrameLayout.LayoutParams(-1, -1))
         }
         addView(pane, LinearLayout.LayoutParams(-1, 0, 1f).apply {
-            leftMargin = dp(16); rightMargin = dp(16); topMargin = dp(8)
+            leftMargin = dp(JianquSpacing.space16Dp); rightMargin = dp(JianquSpacing.space16Dp); topMargin = dp(JianquSpacing.space8Dp)
         })
         val navigation = LinearLayout(this@ContentGalleryActivity).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setPadding(dp(JianquSpacing.space16Dp), dp(JianquSpacing.space12Dp), dp(JianquSpacing.space16Dp), dp(JianquSpacing.space12Dp))
             gravity = Gravity.CENTER_VERTICAL
         }
         navigation.addView(button("上一张") {
@@ -459,7 +454,7 @@ class ContentGalleryActivity : Activity() {
     }
 
     private fun footer() = text("本地模拟 · 无真实版权媒体 / 无私人照片 / 无账户与播放历史",
-        12f, muted).apply {
+        JianquTypography.captionSp, muted).apply {
         gravity = Gravity.CENTER
         setPadding(dp(9), 0, dp(9), 0)
     }
@@ -473,7 +468,7 @@ class ContentGalleryActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(ui.background)
         }
-        root.addView(header(), LinearLayout.LayoutParams(-1, dp(72)))
+        root.addView(header(), LinearLayout.LayoutParams(-1, -2))
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
@@ -494,13 +489,13 @@ class ContentGalleryActivity : Activity() {
         }
         if (wide()) {
             container.addView(left, LinearLayout.LayoutParams(0, -2, .82f).apply {
-                rightMargin = dp(14)
+                rightMargin = dp(JianquSpacing.space14Dp)
             })
             container.addView(right, LinearLayout.LayoutParams(0, -2, 1.18f))
         } else {
             container.addView(left, LinearLayout.LayoutParams(-1, -2))
             container.addView(right, LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(14)
+                topMargin = dp(JianquSpacing.space14Dp)
             })
         }
         scroll.addView(container)
